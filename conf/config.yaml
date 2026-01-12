@@ -1,0 +1,17 @@
+Mysql:
+  Host: "14.103.171.130"
+  Port: 3306
+  User: "root"
+  Password: "4ay1nkal3u8ed77y"
+  Database: "coupontemporarily"
+
+Redis:
+  Host: "14.103.171.130"
+  Port: 6379
+  Password: "4ay1nkal3u8ed77y"
+  Database: 0
+
+Coupon:
+  AntiBrushLimit: 3         # 防刷：单用户/设备1分钟最多领取3次
+  AntiBrushExpire: 60       # 防刷过期时间 秒
+  AesKey: "1234567890123456" # AES加密密钥
