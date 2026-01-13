@@ -8,7 +8,10 @@ import (
 
 func ViperInit() error {
 	var err error
+	viper.AddConfigPath("conf")
+	viper.AddConfigPath("../conf")
 	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
 	err = viper.ReadInConfig()
 	if err != nil {
 		return err
@@ -17,6 +20,6 @@ func ViperInit() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("配置", Cfg)
+	fmt.Println("配置动态加载成功", Cfg)
 	return nil
 }
