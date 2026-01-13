@@ -1,0 +1,56 @@
+# Go 标准忽略（来自 https://github.com/github/gitignore/blob/main/Go.gitignore）
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+
+# End of Go standard
+
+# Kitex 生成代码（这些从 IDL 重新生成，不要提交！）
+kitex_gen/
+idl_gen/
+thrift_gen/
+kitex_gen/
+# 如果你的生成目录叫其他名字，也加进去，比如 gen/ 或 output/
+
+# IDE / 编辑器配置（你用 IDEA/Cursor 遇到的痛点）
+.idea/
+*.iml
+*.iws
+
+# macOS / Windows 临时文件
+.DS_Store
+Thumbs.db
+
+# 日志、临时、构建输出
+*.log
+tmp/
+dist/
+bin/
+build/
+coverage/
+prof/
+
+# 如果有 Docker 或其他构建产物
+Dockerfile*
+docker-compose*
+*.dockerignore
+
+# 其他常见（根据需要加/删）
+.env               # 环境变量文件，别提交真实密钥
+*.swp              # vim 临时
+*.bak
