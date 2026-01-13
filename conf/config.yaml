@@ -1,15 +1,15 @@
-Mysql:
+MysqlInit:
   Host: "14.103.171.130"
   Port: 3306
   User: "root"
   Password: "4ay1nkal3u8ed77y"
   Database: "coupontemporarily"
 
-Redis:
+RedisInit:
   Host: "14.103.171.130"
   Port: 6379
   Password: "4ay1nkal3u8ed77y"
-  Database: 0
+  Database: 4
 
 Coupon:
   AntiBrushLimit: 3         # 防刷：单用户/设备1分钟最多领取3次
