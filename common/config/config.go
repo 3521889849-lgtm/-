@@ -3,12 +3,12 @@ package config
 var Cfg = new(Config)
 
 type Config struct {
-	MysqlInit
-	RedisInit
+	Mysql
+	Redis
 	Coupon
 }
 
-type MysqlInit struct {
+type Mysql struct {
 	Host     string
 	Port     int
 	User     string
@@ -16,7 +16,7 @@ type MysqlInit struct {
 	Database string
 }
 
-type RedisInit struct {
+type Redis struct {
 	Host     string
 	Port     int
 	Password string

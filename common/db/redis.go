@@ -12,7 +12,7 @@ var Rdb *redis.Client
 var Ctx = context.Background()
 
 func RedisInit() error {
-	redisCfg := config.Cfg.RedisInit
+	redisCfg := config.Cfg.Redis
 
 	Rdb = redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", redisCfg.Host, redisCfg.Port),

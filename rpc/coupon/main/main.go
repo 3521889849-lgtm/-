@@ -4,8 +4,11 @@ import (
 	"context" // 必须导入，Test方法要用到ctx参数
 	"example_shop/kitex_gen/coupon"
 	"example_shop/kitex_gen/coupon/couponservice"
+	"net"
 
 	"log"
+
+	_ "example_shop/common/init"
 
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
@@ -30,6 +33,11 @@ func main() {
 		new(CouponServiceImpl), // 现在这个结构体已实现全部接口，不再爆红
 		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{
 			ServiceName: "coupon_service",
+		}),
+		// 修改监听端口，避免 8888 被占用导致启动失败
+		server.WithServiceAddr(&net.TCPAddr{
+			IP:   net.IPv4(0, 0, 0, 0),
+			Port: 6666,
 		}),
 	)
 
