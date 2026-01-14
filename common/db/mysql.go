@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"example_shop/common/config"
 	"example_shop/common/model/audit"
-	coupon "example_shop/common/model/coupons"
 	"fmt"
 	"log"
 	"time"
@@ -60,12 +59,6 @@ func MysqlInit() error {
 
 	// 执行自动迁移（根据模型创建/更新表）
 	if err := DB.AutoMigrate(
-		&coupon.CouponBase{},
-		&coupon.CouponApplyRange{},
-		&coupon.UserCoupon{},
-		&coupon.CouponGrantTask{},
-		&coupon.CouponGrantTaskDetail{},
-		&coupon.CouponVerifyRecord{},
 		&audit.AuditMain{},
 		&audit.AuditTicketOrder{},
 		&audit.AuditHotelOrder{},
