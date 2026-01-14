@@ -3,7 +3,7 @@ package db
 import (
 	"database/sql"
 	"example_shop/common/config"
-	review "example_shop/common/model/Review"
+	"example_shop/common/model/audit"
 	coupon "example_shop/common/model/coupons"
 	"fmt"
 	"log"
@@ -20,13 +20,12 @@ var DB *gorm.DB
 // 全局数据库连接池对象（原生sql.DB）
 var SqlDB *sql.DB
 
-// MysqlInit 初始化MySQL数据库，返回错误
 func MysqlInit() error {
 	// 从配置中获取数据库信息
 	mysqlConf := config.Cfg.Mysql
 	// 修复format格式串（正确的DSN格式）
 	dsn := fmt.Sprintf(
-		"%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		"%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Asia%%2FShanghai",
 		mysqlConf.User,
 		mysqlConf.Password,
 		mysqlConf.Host,
@@ -67,10 +66,10 @@ func MysqlInit() error {
 		&coupon.CouponGrantTask{},
 		&coupon.CouponGrantTaskDetail{},
 		&coupon.CouponVerifyRecord{},
-		&review.AuditGroup{},
-		&review.AuditGroupRelation{},
-		&review.AuditOrder{},
-		&review.AuditOrderDetail{},
+		&audit.AuditMain{},
+		&audit.AuditTicketOrder{},
+		&audit.AuditHotelOrder{},
+		&audit.AuditOperationLog{},
 	); err != nil {
 		return fmt.Errorf("自动迁移失败: %w", err)
 	}

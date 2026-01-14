@@ -12,7 +12,7 @@ func ViperInit() error {
 	viper.AddConfigPath("conf")
 	viper.AddConfigPath("../conf")
 	viper.AddConfigPath("../../conf")
-	viper.AddConfigPath("../../../conf") // 新增这一行，对应根目录的conf
+	viper.AddConfigPath("D:/gowork/piaowu/conf") // 绝对路径兜底
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	err = viper.ReadInConfig()
