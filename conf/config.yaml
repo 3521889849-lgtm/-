@@ -11,7 +11,5 @@ RedisInit:
   Password: "4ay1nkal3u8ed77y"
   Database: 4
 
-Coupon:
-  AntiBrushLimit: 3         # 防刷：单用户/设备1分钟最多领取3次
-  AntiBrushExpire: 60       # 防刷过期时间 秒
-  AesKey: "1234567890123456" # AES加密密钥
+AesConfig:
+  AesKey: "1234567890123456" # AES加密密钥（16、24或32字节）

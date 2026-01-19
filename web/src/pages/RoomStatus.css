@@ -1,0 +1,20 @@
+.room-status-page {
+  background: #fff;
+  padding: 24px;
+  border-radius: 4px;
+}
+
+.page-header {
+  margin-bottom: 16px;
+}
+
+.search-section {
+  background: #fafafa;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 4px;
+}
+
+.sync-section {
+  margin-bottom: 16px;
+}

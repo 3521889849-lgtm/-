@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-RUN_NAME="coupon_service"
+RUN_NAME="hotel_service"
 
 mkdir -p output/bin
 cp script/* output/

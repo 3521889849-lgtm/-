@@ -1,0 +1,48 @@
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.logo-default {
+  padding: 16px;
+}
+
+.logo-small {
+  padding: 8px;
+}
+
+.logo-svg {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.logo-small .logo-svg {
+  width: 32px;
+  height: 32px;
+}
+
+.logo-text {
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.logo-small .logo-text {
+  font-size: 16px;
+  color: #1890ff;
+}
+
+/* 侧边栏logo样式 */
+.sidebar .logo-container {
+  height: 64px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Header logo样式 */
+.header .logo-container {
+  gap: 12px;
+}

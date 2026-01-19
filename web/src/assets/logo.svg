@@ -1,0 +1,43 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 黑色外圈 -->
+  <circle cx="100" cy="100" r="100" fill="#000000"/>
+  
+  <!-- 金色螺旋背景 -->
+  <defs>
+    <radialGradient id="goldGradient" cx="50%" cy="50%">
+      <stop offset="0%" stop-color="#FFD700" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#FFA500" stop-opacity="0.8"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- 金色螺旋路径 -->
+  <path d="M 100 100 
+           A 80 80 0 1 1 180 100
+           A 60 60 0 1 1 140 100
+           A 40 40 0 1 1 120 100
+           A 20 20 0 1 1 110 100" 
+        fill="url(#goldGradient)" 
+        stroke="#FFD700" 
+        stroke-width="2"/>
+  
+  <!-- 火焰状装饰元素 -->
+  <g opacity="0.8">
+    <path d="M 20 100 L 30 80 L 25 100 L 30 120 Z" fill="#000000"/>
+    <path d="M 180 100 L 170 80 L 175 100 L 170 120 Z" fill="#000000"/>
+    <path d="M 100 20 L 80 30 L 100 25 L 120 30 Z" fill="#000000"/>
+    <path d="M 100 180 L 80 170 L 100 175 L 120 170 Z" fill="#000000"/>
+    <path d="M 50 50 L 45 60 L 55 55 L 60 45 Z" fill="#000000"/>
+    <path d="M 150 50 L 145 60 L 155 55 L 160 45 Z" fill="#000000"/>
+    <path d="M 50 150 L 45 140 L 55 145 L 60 155 Z" fill="#000000"/>
+    <path d="M 150 150 L 145 140 L 155 145 L 160 155 Z" fill="#000000"/>
+  </g>
+  
+  <!-- 中心红色眼睛符号 -->
+  <circle cx="100" cy="100" r="25" fill="#DC143C"/>
+  <circle cx="100" cy="100" r="8" fill="#000000"/>
+  <!-- 四个三角形 -->
+  <polygon points="100,85 95,95 105,95" fill="#000000"/>
+  <polygon points="100,115 95,105 105,105" fill="#000000"/>
+  <polygon points="85,100 95,95 95,105" fill="#000000"/>
+  <polygon points="115,100 105,95 105,105" fill="#000000"/>
+</svg>
