@@ -15,6 +15,6 @@ func init() {
 		log.Fatalf("MySQL连接初始化失败: %v", err)
 	}
 	if err := db.RedisInit(); err != nil {
-		log.Fatalf("Redis连接初始化失败: %v", err)
+		log.Printf("Redis连接初始化失败: %v，已跳过", err)
 	}
 }
