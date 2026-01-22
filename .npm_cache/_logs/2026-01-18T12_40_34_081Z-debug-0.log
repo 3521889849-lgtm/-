@@ -1,0 +1,40 @@
+0 verbose cli D:\node\node.exe D:\node\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.6.2
+2 info using node@v24.12.0
+3 silly config load:file:D:\node\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\12281\Desktop\piaowu(3)\.npmrc
+5 silly config load:file:C:\Users\12281\.npmrc
+6 silly config load:file:D:\node\node_global\etc\npmrc
+7 verbose title npm init vite-init@latest web --template react-ts
+8 verbose argv "init" "vite-init@latest" "--yes" "web" "--" "--template" "react-ts"
+9 verbose logfile logs-max:10 dir:C:\Users\12281\Desktop\piaowu(3)\.npm_cache\_logs\2026-01-18T12_40_34_081Z-
+10 verbose logfile C:\Users\12281\Desktop\piaowu(3)\.npm_cache\_logs\2026-01-18T12_40_34_081Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+13 http fetch GET 200 https://registry.npmjs.org/create-vite-init 422ms (cache miss)
+14 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+15 silly idealTree buildDeps
+16 silly fetch manifest create-vite-init@1.0.33
+17 silly packumentCache full:https://registry.npmjs.org/create-vite-init cache-miss
+18 http fetch GET 200 https://registry.npmjs.org/npm 760ms
+19 http fetch GET 200 https://registry.npmjs.org/create-vite-init 310ms (cache miss)
+20 silly packumentCache full:https://registry.npmjs.org/create-vite-init set size:undefined disposed:false
+21 silly placeDep ROOT create-vite-init@1.0.33 OK for:  want: 1.0.33
+22 silly reify moves {}
+23 silly audit bulk request { 'create-vite-init': [ '1.0.33' ] }
+24 http cache create-vite-init@https://registry.npmjs.org/create-vite-init/-/create-vite-init-1.0.33.tgz 0ms (cache hit)
+25 silly tarball no local data for create-vite-init@https://registry.npmjs.org/create-vite-init/-/create-vite-init-1.0.33.tgz. Extracting by manifest.
+26 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 246ms
+27 silly audit report {}
+28 http fetch GET 200 https://registry.npmjs.org/create-vite-init/-/create-vite-init-1.0.33.tgz 405ms (cache miss)
+29 verbose cwd C:\Users\12281\Desktop\piaowu(3)
+30 verbose os Windows_NT 10.0.26200
+31 verbose node v24.12.0
+32 verbose npm  v11.6.2
+33 notice
+33 notice New [33mminor[39m version of npm available! [33m11.6.2[39m -> [34m11.7.0[39m
+33 notice Changelog: [34mhttps://github.com/npm/cli/releases/tag/v11.7.0[39m
+33 notice To update run: [4mnpm install -g npm@11.7.0[24m
+33 notice  { force: true, Symbol(proc-log.meta): true }
+34 verbose exit 0
+35 info ok
