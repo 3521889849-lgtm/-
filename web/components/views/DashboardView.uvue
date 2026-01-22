@@ -1,0 +1,257 @@
+<template>
+	<view class="dashboard-view">
+		<!-- 顶部统计卡片区域 -->
+		<view class="stats-row">
+			<view class="stat-card" @click="emitNavigate('schedule')">
+				<text class="stat-label">今日排班</text>
+				<text class="stat-value text-blue">{{ todayScheduleCount }}</text>
+				<text class="stat-desc">人次</text>
+			</view>
+			<view class="stat-card" @click="emitNavigate('shift')">
+				<text class="stat-label">班次配置</text>
+				<text class="stat-value text-purple">{{ shiftCount }}</text>
+				<text class="stat-desc">个</text>
+			</view>
+			<view class="stat-card">
+				<text class="stat-label">客服人员</text>
+				<text class="stat-value text-green">{{ customerCount }}</text>
+				<text class="stat-desc">人</text>
+			</view>
+		</view>
+
+		<!-- ECharts 图表区域 -->
+		<view class="dashboard-card">
+			<view class="card-header">
+				<view class="header-indicator"></view>
+				<text class="card-title">实时数据监控</text>
+			</view>
+			<!-- 图表容器 -->
+			<view id="chart-container" class="chart-container"></view>
+		</view>
+	</view>
+</template>
+
+<script>
+	import { api } from '../../common/api.js'
+	import { ensureOk } from '../../common/request.js'
+	import * as echarts from 'echarts'
+
+	function todayYMD() {
+		const d = new Date()
+		const y = d.getFullYear()
+		const m = String(d.getMonth() + 1).padStart(2, '0')
+		const dd = String(d.getDate()).padStart(2, '0')
+		return `${y}-${m}-${dd}`
+	}
+
+	export default {
+		data() {
+			return {
+				customerCount: 0,
+				shiftCount: 0,
+				todayScheduleCount: 0,
+				myChart: null as echarts.ECharts | null
+			}
+		},
+		mounted() {
+			this.loadDashboardData()
+			// 延迟初始化图表，确保DOM已渲染
+			setTimeout(() => {
+				this.initChart()
+			}, 300)
+		},
+		// 组件销毁前销毁图表实例
+		beforeUnmount() {
+			if (this.myChart) {
+				this.myChart.dispose()
+				this.myChart = null
+			}
+		},
+		methods: {
+			emitNavigate(tab) {
+				this.$emit('navigate', tab)
+			},
+			async loadDashboardData() {
+				// 并行加载数据
+				try {
+					const p1 = api.listCustomerService({ page: 1, page_size: 1 }).then(res => {
+						ensureOk(res)
+						this.customerCount = res.total || 0
+					})
+					const p2 = api.listShiftConfig({ page: 1, page_size: 1 }).then(res => {
+						ensureOk(res)
+						this.shiftCount = res.total || 0
+					})
+					// 获取今日排班
+					const today = todayYMD()
+					const p3 = api.listScheduleGrid({ 
+						start_date: today, 
+						end_date: today 
+					}).then(res => {
+						ensureOk(res)
+						// 计算今日有多少个单元格有排班
+						const cells = res.cells || []
+						this.todayScheduleCount = cells.filter(c => c.shift_id > 0).length
+					})
+
+					await Promise.all([p1, p2, p3])
+					// 更新图表数据
+					this.updateChartData()
+				} catch (e) {
+					console.error('加载看板数据失败', e)
+				}
+			},
+			initChart() {
+				// #ifdef H5
+				const chartDom = document.getElementById('chart-container')
+				if (chartDom) {
+					this.myChart = echarts.init(chartDom)
+					const option = {
+						tooltip: {
+							trigger: 'axis'
+						},
+						legend: {
+							data: ['在线客服', '进行中会话']
+						},
+						grid: {
+							left: '3%',
+							right: '4%',
+							bottom: '3%',
+							containLabel: true
+						},
+						xAxis: {
+							type: 'category',
+							boundaryGap: false,
+							data: ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00']
+						},
+						yAxis: {
+							type: 'value'
+						},
+						series: [
+							{
+								name: '在线客服',
+								type: 'line',
+								smooth: true,
+								data: [5, 12, 10, 15, 18, 12, 8],
+								itemStyle: { color: '#007aff' }
+							},
+							{
+								name: '进行中会话',
+								type: 'line',
+								smooth: true,
+								data: [10, 45, 30, 60, 85, 50, 20],
+								itemStyle: { color: '#34c759' },
+								areaStyle: {
+									color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+										{ offset: 0, color: 'rgba(52, 199, 89, 0.5)' },
+										{ offset: 1, color: 'rgba(52, 199, 89, 0.05)' }
+									])
+								}
+							}
+						]
+					}
+					this.myChart.setOption(option)
+					
+					// 监听窗口大小变化
+					window.addEventListener('resize', () => {
+						this.myChart && this.myChart.resize()
+					})
+				}
+				// #endif
+				
+				// #ifndef H5
+				uni.showToast({ title: '图表仅在H5环境展示', icon: 'none' })
+				// #endif
+			},
+			updateChartData() {
+				if (!this.myChart) return
+				// 这里可以根据实际API返回的数据更新图表
+				// 目前仅做示例，数据是静态的
+			}
+		}
+	}
+</script>
+
+<style>
+	.dashboard-view {
+		/* Removed fixed height/background as it's part of main layout */
+	}
+
+	/* 统计卡片行 */
+	.stats-row {
+		flex-direction: row;
+		justify-content: space-between;
+		margin-bottom: 20px;
+	}
+
+	.stat-card {
+		flex: 1;
+		background-color: #ffffff;
+		border-radius: 16px;
+		padding: 20px;
+		margin-right: 12px;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+		align-items: center;
+	}
+
+	.stat-card:last-child {
+		margin-right: 0;
+	}
+
+	.stat-label {
+		font-size: 13px;
+		color: #86909c;
+		margin-bottom: 8px;
+	}
+
+	.stat-value {
+		font-size: 28px;
+		font-weight: 600;
+		margin-bottom: 4px;
+	}
+
+	.stat-desc {
+		font-size: 12px;
+		color: #c9cdd4;
+	}
+
+	.text-blue { color: #007aff; }
+	.text-purple { color: #5856d6; }
+	.text-green { color: #34c759; }
+
+	/* 通用卡片容器 */
+	.dashboard-card {
+		background-color: #ffffff;
+		border-radius: 16px;
+		padding: 24px;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+		/* 确保容器有高度 */
+		min-height: 400px; 
+	}
+
+	.card-header {
+		flex-direction: row;
+		align-items: center;
+		margin-bottom: 24px;
+	}
+
+	.header-indicator {
+		width: 4px;
+		height: 16px;
+		background-color: #007aff;
+		border-radius: 2px;
+		margin-right: 10px;
+	}
+
+	.card-title {
+		font-size: 16px;
+		font-weight: 600;
+		color: #1d1d1f;
+	}
+
+	/* 图表容器 */
+	.chart-container {
+		width: 100%;
+		height: 320px;
+	}
+</style>

@@ -1,0 +1,455 @@
+<template>
+	<view class="main-layout">
+		<!-- 左侧侧边栏 -->
+		<view class="sidebar">
+			<view class="sidebar-header">
+				<image class="logo" src="/static/PixPin_2026-01-13_19-52-32.png"></image>
+				<text class="app-title">客服系统</text>
+			</view>
+			
+			<scroll-view class="menu-scroll" scroll-y="true">
+				<view class="menu-group">
+					<view 
+						v-if="isAdmin"
+						class="menu-item" 
+						:class="{ active: currentTab === 'dashboard' }"
+						@click="switchTab('dashboard')"
+					>
+						<text class="menu-icon">📊</text>
+						<text class="menu-text">工作台</text>
+					</view>
+				</view>
+
+				<view class="menu-group-title">业务管理</view>
+				<view class="menu-group">
+					<!-- 排班管理：仅管理员可见 -->
+					<view 
+						v-if="isAdmin"
+						class="menu-item" 
+						:class="{ active: currentTab === 'schedule' }"
+						@click="switchTab('schedule')"
+					>
+						<text class="menu-icon">📅</text>
+						<text class="menu-text">排班管理</text>
+					</view>
+					<!-- 班次配置：仅管理员可见 -->
+					<view 
+						v-if="isAdmin"
+						class="menu-item" 
+						:class="{ active: currentTab === 'shift' }"
+						@click="switchTab('shift')"
+					>
+						<text class="menu-icon">⚙️</text>
+						<text class="menu-text">班次配置</text>
+					</view>
+					<!-- 请假申请：所有角色可见 -->
+					<view 
+						class="menu-item" 
+						:class="{ active: currentTab === 'leave_apply' }"
+						@click="switchTab('leave_apply')"
+					>
+						<text class="menu-icon">✈️</text>
+						<text class="menu-text">请假申请</text>
+					</view>
+					<!-- 审批处理：仅管理员可见 -->
+					<view 
+						v-if="isAdmin"
+						class="menu-item" 
+						:class="{ active: currentTab === 'leave_approve' }"
+						@click="switchTab('leave_approve')"
+					>
+						<text class="menu-icon">✅</text>
+						<text class="menu-text">审批处理</text>
+					</view>
+				</view>
+
+				<view class="menu-group-title">客户服务</view>
+				<view class="menu-group">
+					<!-- 会话管理：所有角色可见 -->
+					<view 
+						class="menu-item" 
+						:class="{ active: currentTab === 'transfer' }"
+						@click="switchTab('transfer')"
+					>
+						<text class="menu-icon">💬</text>
+						<text class="menu-text">会话管理</text>
+					</view>
+				</view>
+			</scroll-view>
+			
+			<view class="sidebar-footer">
+				<view class="user-info">
+					<view class="avatar">{{ userAvatar }}</view>
+					<view class="user-detail">
+						<text class="username">{{ userName }}</text>
+						<text class="role-name">{{ roleName }}</text>
+					</view>
+				</view>
+				<view class="logout-btn" @click="handleLogout">
+					<text class="logout-icon">🚪</text>
+					<text class="logout-text">退出</text>
+				</view>
+			</view>
+		</view>
+
+		<!-- 右侧内容区域 -->
+		<view class="content-area">
+			<!-- 顶部导航栏 (可选，用于显示当前路径或面包屑) -->
+			<view class="top-bar">
+				<text class="page-title">{{ currentPageTitle }}</text>
+				<view class="top-actions">
+					<text class="date-display">{{ currentDate }}</text>
+				</view>
+			</view>
+
+			<!-- 内容视图容器 -->
+			<scroll-view class="view-scroll" scroll-y="true" :scroll-top="scrollTop" @scroll="onViewScroll">
+				<view class="view-container">
+					<DashboardView v-if="currentTab === 'dashboard'" @navigate="switchTab" />
+					<ScheduleView v-if="currentTab === 'schedule'" />
+					<ShiftConfigView v-if="currentTab === 'shift'" @request-scroll-top="scrollToTop" />
+					<LeaveApplyView v-if="currentTab === 'leave_apply'" />
+					<LeaveApproveView v-if="currentTab === 'leave_approve'" />
+					<TransferView v-if="currentTab === 'transfer'" />
+				</view>
+			</scroll-view>
+		</view>
+	</view>
+</template>
+
+<script>
+	import DashboardView from '../../components/views/DashboardView.uvue'
+	import ScheduleView from '../../components/views/ScheduleView.uvue'
+	import ShiftConfigView from '../../components/views/ShiftConfigView.uvue'
+	import LeaveApplyView from '../../components/views/LeaveApplyView.uvue'
+	import LeaveApproveView from '../../components/views/LeaveApproveView.uvue'
+	import TransferView from '../../components/views/TransferView.uvue'
+
+	export default {
+		components: {
+			DashboardView,
+			ScheduleView,
+			ShiftConfigView,
+			LeaveApplyView,
+			LeaveApproveView,
+			TransferView
+		},
+		data() {
+			return {
+				currentTab: 'dashboard',
+				currentDate: '',
+				scrollTop: 0,
+				lastScrollTop: 0,
+				// 用户信息
+				userName: '',
+				realName: '',
+				roleCode: '',
+				roleName: ''
+			}
+		},
+		computed: {
+			currentPageTitle() {
+				const map = {
+					'dashboard': '工作台',
+					'schedule': '排班管理',
+					'shift': '班次配置',
+					'leave_apply': '请假申请',
+					'leave_approve': '审批处理',
+					'transfer': '会话管理'
+				}
+				return map[this.currentTab] || '未知页面'
+			},
+			// 用户头像（取姓名第一个字）
+			userAvatar() {
+				return this.realName ? this.realName.charAt(0) : 'U'
+			},
+			// 是否为管理员
+			isAdmin() {
+				return this.roleCode === 'admin'
+			}
+		},
+		onLoad() {
+			// 检查登录状态
+			const token = uni.getStorageSync('token')
+			if (!token) {
+				// 未登录，跳转到登录页
+				uni.reLaunch({ url: '/pages/login/login' })
+				return
+			}
+
+			// 加载用户信息
+			try {
+				const userInfoStr = uni.getStorageSync('userInfo')
+				if (userInfoStr != null && userInfoStr != '') {
+					let userInfo : UTSJSONObject | null = null
+					if (typeof userInfoStr == 'string') {
+						try {
+							userInfo = JSON.parse(userInfoStr as string) as UTSJSONObject
+						} catch (e) {
+							console.error('JSON解析失败:', e)
+						}
+					} else {
+						userInfo = userInfoStr as UTSJSONObject
+					}
+
+					if (userInfo != null) {
+						this.userName = (userInfo['user_name'] ?? '') as string
+						this.realName = (userInfo['real_name'] ?? '') as string
+						this.roleCode = (userInfo['role_code'] ?? '') as string
+						this.roleName = (userInfo['role_name'] ?? '') as string
+					}
+				}
+			} catch (e) {
+				console.error('读取用户信息失败:', e)
+			}
+
+			// 设置当前日期
+			const d = new Date()
+			this.currentDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+			
+			// 客服默认进入请假申请页面
+			if (!this.isAdmin) {
+				this.currentTab = 'leave_apply'
+			}
+		},
+		methods: {
+			// 切换标签页（带权限检查）
+			switchTab(tab) {
+				// 客服权限检查：只允许访问请假申请和会话管理
+				if (!this.isAdmin) {
+					const allowedTabs = ['leave_apply', 'transfer']
+					if (!allowedTabs.includes(tab)) {
+						uni.showToast({
+							title: '无权限访问',
+							icon: 'none'
+						})
+						return
+					}
+				}
+				this.currentTab = tab
+				this.scrollToTop()
+			},
+			scrollToTop() {
+				// 先设为一个极小值或不同值触发响应
+				this.scrollTop = this.lastScrollTop
+				this.$nextTick(() => {
+					this.scrollTop = 0
+				})
+			},
+			onViewScroll(e) {
+				this.lastScrollTop = e.detail.scrollTop
+			},
+			// 退出登录
+			handleLogout() {
+				uni.showModal({
+					title: '提示',
+					content: '确定要退出登录吗？',
+					success: (res) => {
+						if (res.confirm) {
+							// 清除本地存储
+							uni.removeStorageSync('token')
+							uni.removeStorageSync('userInfo')
+							uni.removeStorageSync('isLogin')
+							uni.removeStorageSync('roleCode')
+							// 使用 reLaunch 跳转到登录页，避免页面栈问题
+							uni.reLaunch({ url: '/pages/login/login' })
+						}
+					}
+				})
+			}
+		}
+	}
+</script>
+
+<style>
+	.main-layout {
+		flex-direction: row;
+		width: 100%;
+		height: 100vh;
+		background-color: #f5f7fa;
+		overflow: hidden; /* 防止整体滚动 */
+	}
+
+	/* Sidebar Styles */
+	.sidebar {
+		width: 240px;
+		background-color: #ffffff;
+		border-right: 1px solid #ebedf0;
+		flex-direction: column;
+		display: flex;
+	}
+
+	.sidebar-header {
+		height: 64px;
+		flex-direction: row;
+		align-items: center;
+		padding: 0 20px;
+		border-bottom: 1px solid #f5f5f7;
+	}
+
+	.logo {
+		width: 32px;
+		height: 32px;
+		margin-right: 10px;
+	}
+
+	.app-title {
+		font-size: 18px;
+		font-weight: 600;
+		color: #1d1d1f;
+	}
+
+	.menu-scroll {
+		flex: 1;
+		padding: 16px 0;
+	}
+
+	.menu-group-title {
+		padding: 0 24px;
+		margin-top: 16px;
+		margin-bottom: 8px;
+		font-size: 12px;
+		color: #86909c;
+		font-weight: 500;
+	}
+
+	.menu-item {
+		flex-direction: row;
+		align-items: center;
+		height: 48px;
+		padding: 0 20px;
+		margin: 0 12px;
+		border-radius: 8px;
+		cursor: pointer; /* PC style */
+	}
+
+	.menu-item:hover {
+		background-color: #f7f8fa;
+	}
+
+	.menu-item.active {
+		background-color: #e8f3ff;
+	}
+
+	.menu-item.active .menu-text {
+		color: #007aff;
+		font-weight: 500;
+	}
+
+	.menu-icon {
+		font-size: 18px;
+		margin-right: 12px;
+	}
+
+	.menu-text {
+		font-size: 14px;
+		color: #4e5969;
+	}
+
+	.sidebar-footer {
+		height: 64px;
+		border-top: 1px solid #f5f5f7;
+		padding: 0 20px;
+		justify-content: center;
+	}
+
+	.user-info {
+		flex-direction: row;
+		align-items: center;
+	}
+
+	.avatar {
+		width: 32px;
+		height: 32px;
+		border-radius: 16px;
+		background-color: #007aff;
+		justify-content: center;
+		align-items: center;
+		color: #fff;
+		font-size: 14px;
+		font-weight: 600;
+		margin-right: 10px;
+	}
+
+	.username {
+		font-size: 14px;
+		color: #1d1d1f;
+		font-weight: 500;
+	}
+
+	/* Content Area Styles */
+	.content-area {
+		flex: 1;
+		flex-direction: column;
+		display: flex;
+		height: 100vh;
+	}
+
+	.top-bar {
+		height: 64px;
+		background-color: #ffffff;
+		border-bottom: 1px solid #ebedf0;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0 32px;
+	}
+
+	.page-title {
+		font-size: 18px;
+		font-weight: 600;
+		color: #1d1d1f;
+	}
+
+	.date-display {
+		font-size: 14px;
+		color: #86909c;
+	}
+
+	.view-scroll {
+		flex: 1;
+		/* background-color: #f5f7fa; already set on main-layout but good to ensure */
+	}
+
+	.view-container {
+		padding: 24px 32px;
+		min-height: 100%;
+	}
+
+	/* 用户详情样式 */
+	.user-detail {
+		flex-direction: column;
+		flex: 1;
+	}
+
+	.role-name {
+		font-size: 12px;
+		color: #86909c;
+		margin-top: 2px;
+	}
+
+	/* 退出登录按钮样式 */
+	.logout-btn {
+		flex-direction: row;
+		align-items: center;
+		padding: 6px 12px;
+		border-radius: 6px;
+		cursor: pointer;
+		margin-left: auto;
+	}
+
+	.logout-btn:hover {
+		background-color: #fff1f0;
+	}
+
+	.logout-icon {
+		font-size: 14px;
+		margin-right: 4px;
+	}
+
+	.logout-text {
+		font-size: 12px;
+		color: #f5222d;
+	}
+</style>
+

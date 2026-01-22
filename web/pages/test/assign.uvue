@@ -1,0 +1,204 @@
+<template>
+  <view class="container">
+    <view class="header">
+      <text class="title">客服分配接口测试</text>
+    </view>
+    
+    <view class="card">
+      <view class="form-item">
+        <text class="label">用户ID (User ID)</text>
+        <input class="input" v-model="userId" placeholder="例如: user_001" />
+      </view>
+      
+      <view class="form-item">
+        <text class="label">用户昵称 (Nickname)</text>
+        <input class="input" v-model="userNickname" placeholder="例如: 张三" />
+      </view>
+
+      <view class="form-item">
+        <text class="label">来源渠道 (Source)</text>
+        <input class="input" v-model="source" placeholder="例如: APP" />
+      </view>
+      
+      <button class="btn" @click="assignCustomer" :loading="loading">分配客服 (Assign)</button>
+    </view>
+    
+    <view class="result-card" v-if="result">
+      <view class="result-header">
+        <text class="result-title">响应结果</text>
+        <text class="status-code" :class="{error: result.code !== 0}">Code: {{result.code}}</text>
+      </view>
+      <scroll-view scroll-y="true" class="json-box">
+        <text class="json-content">{{ formattedResult }}</text>
+      </scroll-view>
+      
+      <view class="tips" v-if="result.code === 404">
+        <text>提示：404错误通常表示当前没有在线客服。请检查排班表是否覆盖了当前时间。</text>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+  export default {
+    data() {
+      return {
+        userId: 'test_user_' + Math.floor(Math.random() * 1000),
+        userNickname: '测试用户',
+        source: 'TEST_PAGE',
+        loading: false,
+        result: null
+      }
+    },
+    computed: {
+      formattedResult() {
+        if (!this.result) return '';
+        return JSON.stringify(this.result, null, 2);
+      }
+    },
+    methods: {
+      assignCustomer() {
+        if (!this.userId) {
+          uni.showToast({ title: '请输入用户ID', icon: 'none' });
+          return;
+        }
+        
+        this.loading = true;
+        this.result = null;
+        
+        uni.request({
+          url: 'http://localhost:8081/api/conversation/assign',
+          method: 'POST',
+          header: {
+            'Content-Type': 'application/json'
+          },
+          data: {
+            user_id: this.userId,
+            user_nickname: this.userNickname,
+            source: this.source
+          },
+          success: (res) => {
+            this.result = res.data;
+            if (res.data.code === 0) {
+              uni.showToast({ title: '分配成功', icon: 'success' });
+            } else {
+              uni.showToast({ title: '分配失败', icon: 'none' });
+            }
+          },
+          fail: (err) => {
+            this.result = {
+              code: -1,
+              msg: '请求发送失败，请检查 Gateway 服务是否启动 (localhost:8081)',
+              error: err
+            };
+            uni.showToast({ title: '网络请求失败', icon: 'none' });
+          },
+          complete: () => {
+            this.loading = false;
+          }
+        });
+      }
+    }
+  }
+</script>
+
+<style>
+  .container {
+    padding: 20px;
+    background-color: #f5f7fa;
+    min-height: 100vh;
+  }
+  .header {
+    margin-bottom: 20px;
+    padding-left: 10px;
+    border-left: 4px solid #007aff;
+  }
+  .title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+  }
+  .card {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  }
+  .form-item {
+    margin-bottom: 15px;
+  }
+  .label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #606266;
+    font-weight: 500;
+  }
+  .input {
+    border: 1px solid #dcdfe6;
+    padding: 10px;
+    border-radius: 4px;
+    width: 100%;
+    font-size: 14px;
+    background-color: #fff;
+    box-sizing: border-box; /* Important for width: 100% */
+  }
+  .btn {
+    background-color: #007aff;
+    color: white;
+    font-size: 16px;
+    padding: 5px 0;
+    border-radius: 4px;
+    margin-top: 25px;
+  }
+  .btn:active {
+    background-color: #0062cc;
+  }
+  .result-card {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  }
+  .result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+  }
+  .result-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+  }
+  .status-code {
+    font-weight: bold;
+    color: #67c23a;
+  }
+  .status-code.error {
+    color: #f56c6c;
+  }
+  .json-box {
+    background-color: #282c34;
+    border-radius: 4px;
+    padding: 10px;
+    max-height: 300px;
+  }
+  .json-content {
+    font-family: monospace;
+    color: #abb2bf;
+    font-size: 13px;
+    white-space: pre;
+  }
+  .tips {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #e6a23c;
+    background-color: #fdf6ec;
+    padding: 8px;
+    border-radius: 4px;
+  }
+</style>

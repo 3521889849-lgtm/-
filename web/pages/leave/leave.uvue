@@ -1,0 +1,199 @@
+<template>
+	<view class="page-container">
+		<text class="section-title">提交申请</text>
+		<view class="card">
+			<view class="segmented-control">
+				<view class="segment-item" :class="{ active: apply.apply_type === 0 }" @click="setApplyType(0)">
+					<text class="segment-text" :class="{ 'active-text': apply.apply_type === 0 }">请假</text>
+				</view>
+				<view class="segment-item" :class="{ active: apply.apply_type === 1 }" @click="setApplyType(1)">
+					<text class="segment-text" :class="{ 'active-text': apply.apply_type === 1 }">调班</text>
+				</view>
+			</view>
+
+			<view class="form-group" style="margin-top: 24px;">
+				<view class="field">
+					<text class="form-label">申请人ID</text>
+					<input class="apple-input" v-model="apply.cs_id" placeholder="例如：KF001" />
+				</view>
+
+				<view class="row-group">
+					<view class="field half">
+						<text class="form-label">日期</text>
+						<picker mode="date" :value="apply.target_date" @change="onTargetDateChange">
+							<view class="apple-input picker-text">{{ apply.target_date || '选择日期' }}</view>
+						</picker>
+					</view>
+					<view class="field half">
+						<text class="form-label">班次ID</text>
+						<input class="apple-input" type="number" v-model="apply.shift_id_str" placeholder="例如：1" />
+					</view>
+				</view>
+
+				<view class="field" v-if="apply.apply_type === 1">
+					<text class="form-label">目标客服ID（调班对象）</text>
+					<input class="apple-input" v-model="apply.target_cs_id" placeholder="例如：KF002" />
+				</view>
+
+				<view class="field">
+					<text class="form-label">申请原因</text>
+					<input class="apple-input" v-model="apply.reason" placeholder="可选" />
+				</view>
+
+				<button class="apple-btn" @click="submitApply">提交申请</button>
+				<text v-if="lastApplyId > 0" class="hint-text text-center">最新申请ID：{{ lastApplyId }}</text>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script>
+	// 请假/调班页：对应后端路由 /api/leave/apply、/api/leave/approve
+	import { api } from '../../common/api.js'
+	import { ensureOk } from '../../common/request.js'
+
+	function todayYMD() {
+		const d = new Date()
+		const y = d.getFullYear()
+		const m = String(d.getMonth() + 1).padStart(2, '0')
+		const dd = String(d.getDate()).padStart(2, '0')
+		return `${y}-${m}-${dd}`
+	}
+
+export default {
+	data() {
+		return {
+			lastApplyId: 0,
+			apply: {
+				cs_id: '',
+				apply_type: 0,
+				target_date: '',
+				shift_id_str: '',
+				target_cs_id: '',
+				reason: ''
+			}
+		}
+	},
+	onLoad() {
+		this.apply.target_date = todayYMD()
+	},
+	methods: {
+			setApplyType(type) {
+				this.apply.apply_type = type
+			},
+			onTargetDateChange(e) {
+				this.apply.target_date = e.detail.value
+			},
+		async submitApply() {
+				const csId = (this.apply.cs_id || '').trim()
+				const targetDate = (this.apply.target_date || '').trim()
+				const shiftId = parseInt((this.apply.shift_id_str || '').trim(), 10)
+				const targetCsId = (this.apply.target_cs_id || '').trim()
+
+				if (!csId) {
+					uni.showToast({ title: '请输入申请人ID', icon: 'none' })
+					return
+				}
+				if (!targetDate) {
+					uni.showToast({ title: '请选择日期', icon: 'none' })
+					return
+				}
+				if (Number.isNaN(shiftId) || shiftId <= 0) {
+					uni.showToast({ title: '班次ID无效', icon: 'none' })
+					return
+				}
+				if (this.apply.apply_type === 1 && !targetCsId) {
+					uni.showToast({ title: '请输入目标客服ID', icon: 'none' })
+					return
+				}
+
+				try {
+					uni.showLoading({ title: '提交中' })
+					const res = await api.applyLeaveTransfer({
+						cs_id: csId,
+						apply_type: this.apply.apply_type,
+						target_date: targetDate,
+						shift_id: shiftId,
+						target_cs_id: targetCsId,
+						reason: (this.apply.reason || '').trim()
+					})
+					uni.hideLoading()
+					ensureOk(res)
+					this.lastApplyId = res.apply_id || 0
+					uni.showToast({ title: '提交成功' })
+				} catch (e) {
+					uni.hideLoading()
+					uni.showModal({
+						title: '提交失败',
+						content: e.errMsg || '未知错误',
+						showCancel: false
+					})
+				}
+			}
+		}
+	}
+</script>
+
+<style>
+	.field {
+		margin-bottom: 20px;
+	}
+
+	.row-group {
+		flex-direction: row;
+		justify-content: space-between;
+	}
+
+	.half {
+		width: 48%;
+	}
+
+	.picker-text {
+		height: 50px;
+		line-height: 22px;
+		color: #1d1d1f;
+	}
+
+	.hint-text {
+		font-size: 13px;
+		color: #86868b;
+		margin-top: 12px;
+	}
+	
+	.text-center {
+		text-align: center;
+	}
+
+	/* Segmented Control Style */
+	.segmented-control {
+		flex-direction: row;
+		background-color: #f5f5f7;
+		border-radius: 9px;
+		padding: 2px;
+	}
+
+	.segment-item {
+		flex: 1;
+		padding: 8px 0;
+		border-radius: 7px;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.segment-item.active {
+		background-color: #ffffff;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+	}
+
+	.segment-text {
+		font-size: 14px;
+		font-weight: 500;
+		color: #86868b;
+	}
+
+	.active-text {
+		color: #1d1d1f;
+		font-weight: 600;
+	}
+
+</style>
