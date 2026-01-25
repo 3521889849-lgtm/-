@@ -14,7 +14,7 @@ package db
 
 import (
 	"example_shop/common/config"
-	usermodel "example_shop/internal/ticket_service/model"
+	"example_shop/internal/model"
 	"fmt"
 	"net/url"
 	"strings"
@@ -56,6 +56,26 @@ func ReadDB() *gorm.DB {
 func MysqlInit() error {
 	// 修正：读取正确的配置节点（你的配置是 Mysql，不是 MysqlInit）
 	MysqlS := config.Cfg.Mysql
+
+	// 配置GORM日志级别
+	logLevel := strings.ToLower(strings.TrimSpace(MysqlS.LogLevel))
+	gormLogMode := logger.Warn
+	switch logLevel {
+	case "silent":
+		gormLogMode = logger.Silent
+	case "error":
+		gormLogMode = logger.Error
+	case "warn", "":
+		gormLogMode = logger.Warn
+	case "info":
+		gormLogMode = logger.Info
+	default:
+		gormLogMode = logger.Warn
+	}
+	gormConfig := &gorm.Config{
+		Logger: logger.Default.LogMode(gormLogMode),
+	}
+
 	// 校验配置是否为空（关键：避免读取到空配置导致地址无效）
 	if MysqlS.Host == "" || MysqlS.Port == 0 || MysqlS.User == "" || MysqlS.Database == "" {
 		return fmt.Errorf("mysql配置不完整，必填项：Host/Port/User/Database")
@@ -81,27 +101,6 @@ func MysqlInit() error {
 		MysqlS.Database,
 		loc,
 	)
-
-	// 配置GORM日志级别
-	// logger.Info: 显示所有SQL语句（开发环境推荐）
-	// logger.Silent: 不显示SQL日志（生产环境推荐）
-	logLevel := strings.ToLower(strings.TrimSpace(MysqlS.LogLevel))
-	gormLogMode := logger.Warn
-	switch logLevel {
-	case "silent":
-		gormLogMode = logger.Silent
-	case "error":
-		gormLogMode = logger.Error
-	case "warn", "":
-		gormLogMode = logger.Warn
-	case "info":
-		gormLogMode = logger.Info
-	default:
-		gormLogMode = logger.Warn
-	}
-	gormConfig := &gorm.Config{
-		Logger: logger.Default.LogMode(gormLogMode),
-	}
 
 	// 建立连接
 	db, err := gorm.Open(mysql.Open(dsn), gormConfig)
@@ -135,24 +134,24 @@ func MysqlInit() error {
 		// 按依赖关系迁移表（先迁移基础表，再迁移依赖表）
 		err = db.AutoMigrate(
 			// ========== 基础表（无外键依赖）==========
-			&usermodel.UserInfo{},         // 用户表：存储用户基本信息
-			&usermodel.PassengerInfo{},    // 乘客表：存储乘客信息（关联订单）
-			&usermodel.TrainInfo{},        // 车次表：存储车次基本信息
-			&usermodel.SeatInfo{},         // 座位表：存储座位信息和状态
-			&usermodel.TicketRuleConfig{}, // 购票规则配置表：存储购票规则和限购策略
+			&model.UserInfo{},         // 用户表：存储用户基本信息
+			&model.PassengerInfo{},    // 乘客表：存储乘客信息（关联订单）
+			&model.TrainInfo{},        // 车次表：存储车次基本信息
+			&model.SeatInfo{},         // 座位表：存储座位信息和状态
+			&model.TicketRuleConfig{}, // 购票规则配置表：存储购票规则和限购策略
 
 			// ========== 依赖基础表的表 ==========
-			&usermodel.TrainStationPass{},     // 车次途径站点表（依赖TrainInfo）
-			&usermodel.SeatSegmentOccupancy{}, // 座位区间占用表（依赖TrainInfo/SeatInfo）
-			&usermodel.OrderInfo{},            // 车票订单表（依赖UserInfo/PassengerInfo/TrainInfo）
-			&usermodel.OrderSeatRelation{},    // 订单座位关联表（依赖OrderInfo/SeatInfo）
-			&usermodel.OrderAuditLog{},        // 订单操作审计表（依赖OrderInfo）：记录订单操作日志
-			&usermodel.TicketInventoryLog{},   // 余票变更日志表（依赖TrainInfo/SeatInfo）：记录库存变化
+			&model.TrainStationPass{},     // 车次途径站点表（依赖TrainInfo）
+			&model.SeatSegmentOccupancy{}, // 座位区间占用表（依赖TrainInfo/SeatInfo）
+			&model.OrderInfo{},            // 车票订单表（依赖UserInfo/PassengerInfo/TrainInfo）
+			&model.OrderSeatRelation{},    // 订单座位关联表（依赖OrderInfo/SeatInfo）
+			&model.OrderAuditLog{},        // 订单操作审计表（依赖OrderInfo）：记录订单操作日志
+			&model.TicketInventoryLog{},   // 余票变更日志表（依赖TrainInfo/SeatInfo）：记录库存变化
 		)
 		if err != nil {
 			return fmt.Errorf("数据库表迁移失败：%w", err)
 		}
-		if !db.Migrator().HasTable(&usermodel.UserInfo{}) {
+		if !db.Migrator().HasTable(&model.UserInfo{}) {
 			return fmt.Errorf("数据库表迁移后仍未发现用户表(user_infos)，请检查连接的Database与权限")
 		}
 

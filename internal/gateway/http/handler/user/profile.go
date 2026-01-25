@@ -6,7 +6,7 @@ import (
 	"example_shop/common/encrypt"
 	"example_shop/internal/gateway/http/dto"
 	"example_shop/internal/gateway/http/middleware"
-	"example_shop/internal/ticket_service/model"
+	"example_shop/internal/model"
 	"example_shop/kitex_gen/userapi"
 	"strings"
 	"time"
@@ -26,7 +26,7 @@ func (h *Handler) GetProfile(ctx context.Context, c *app.RequestContext) {
 
 	var u model.UserInfo
 	if err := db.MysqlDB.Where("user_id = ?", userID).First(&u).Error; err != nil {
-		c.JSON(500, dto.BaseHTTPResp{Code: 500, Msg: "查询失败: " + err.Error()})
+		c.JSON(500, dto.BaseHTTPResp{Code: 500, Msg: "查询失败"})
 		return
 	}
 
@@ -74,7 +74,7 @@ func (h *Handler) UpdateProfile(ctx context.Context, c *app.RequestContext) {
 
 	var u model.UserInfo
 	if err := db.MysqlDB.Where("user_id = ?", userID).First(&u).Error; err != nil {
-		c.JSON(500, dto.BaseHTTPResp{Code: 500, Msg: "查询失败: " + err.Error()})
+		c.JSON(500, dto.BaseHTTPResp{Code: 500, Msg: "查询失败"})
 		return
 	}
 	if strings.EqualFold(strings.TrimSpace(u.RealNameVerified), "VERIFIED") {
@@ -84,7 +84,7 @@ func (h *Handler) UpdateProfile(ctx context.Context, c *app.RequestContext) {
 
 	if err := db.MysqlDB.Model(&model.UserInfo{}).Where("user_id = ?", userID).
 		Updates(map[string]any{"real_name": realName, "updated_at": time.Now()}).Error; err != nil {
-		c.JSON(500, dto.BaseHTTPResp{Code: 500, Msg: "更新失败: " + err.Error()})
+		c.JSON(500, dto.BaseHTTPResp{Code: 500, Msg: "更新失败"})
 		return
 	}
 
@@ -108,4 +108,3 @@ func (h *Handler) UpdateProfile(ctx context.Context, c *app.RequestContext) {
 		},
 	})
 }
-

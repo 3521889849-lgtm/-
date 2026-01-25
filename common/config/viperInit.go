@@ -51,6 +51,9 @@ func ViperInit() error {
 	// 读取配置文件
 	err = viper.ReadInConfig()
 	if err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			return fmt.Errorf("未找到配置文件 conf/config.yaml（可参考 conf/config.yaml 并复制为 config.yaml），也可使用环境变量覆盖：%w", err)
+		}
 		return fmt.Errorf("配置文件读取失败: %w", err)
 	}
 
@@ -65,6 +68,5 @@ func ViperInit() error {
 	}
 	// 配置加载成功提示
 	fmt.Println("配置动态加载成功:", viper.ConfigFileUsed())
-	fmt.Printf("RealName配置已加载: SecretID=%t SecretKey=%t\n", strings.TrimSpace(Cfg.RealName.SecretID) != "", strings.TrimSpace(Cfg.RealName.SecretKey) != "")
 	return nil
 }

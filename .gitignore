@@ -9,6 +9,9 @@ conf/config.yaml
 configs/*.yaml
 !configs/*.example.yaml
 
+# 本地运行产物
+*.db
+
 # 日志文件
 logs/
 *.log

@@ -5,8 +5,8 @@ import (
 	"context"
 	"errors"
 	"example_shop/common/db"
+	model2 "example_shop/internal/model"
 	"example_shop/internal/ticket_service/app/shared"
-	"example_shop/internal/ticket_service/model"
 	kitexuser "example_shop/kitex_gen/user"
 	"strings"
 	"time"
@@ -27,7 +27,7 @@ func (s *Service) GetTrainDetail(ctx context.Context, req *kitexuser.GetTrainDet
 		return &kitexuser.GetTrainDetailResp{BaseResp: &kitexuser.BaseResp{Code: 400, Msg: "train_id不能为空"}}, nil
 	}
 
-	var t model.TrainInfo
+	var t model2.TrainInfo
 	if err := db.ReadDB().Where("train_id = ?", req.TrainId).First(&t).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &kitexuser.GetTrainDetailResp{BaseResp: &kitexuser.BaseResp{Code: 404, Msg: "车次不存在"}}, nil
@@ -44,14 +44,14 @@ func (s *Service) GetTrainDetail(ctx context.Context, req *kitexuser.GetTrainDet
 		toStation = strings.TrimSpace(*req.ArrivalStation)
 	}
 
-	var depStop model.TrainStationPass
+	var depStop model2.TrainStationPass
 	if err := db.ReadDB().Where("train_id = ? AND station_name = ?", t.ID, fromStation).First(&depStop).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &kitexuser.GetTrainDetailResp{BaseResp: &kitexuser.BaseResp{Code: 404, Msg: "上车站不在该车次途经站列表"}}, nil
 		}
 		return &kitexuser.GetTrainDetailResp{BaseResp: &kitexuser.BaseResp{Code: 500, Msg: "查询上车站失败: " + err.Error()}}, nil
 	}
-	var arrStop model.TrainStationPass
+	var arrStop model2.TrainStationPass
 	if err := db.ReadDB().Where("train_id = ? AND station_name = ?", t.ID, toStation).First(&arrStop).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &kitexuser.GetTrainDetailResp{BaseResp: &kitexuser.BaseResp{Code: 404, Msg: "下车站不在该车次途经站列表"}}, nil
@@ -134,7 +134,7 @@ func countRemainingSegment(trainID, seatType string, fromSeq, toSeq uint32) (int
 
 func minSeatPrice(trainID, seatType string) (float64, error) {
 	var price float64
-	err := db.ReadDB().Model(&model.SeatInfo{}).
+	err := db.ReadDB().Model(&model2.SeatInfo{}).
 		Select("MIN(seat_price)").
 		Where("train_id = ? AND seat_type = ?", trainID, seatType).
 		Scan(&price).Error

@@ -1,17 +1,24 @@
+// Package order 是网关侧“订单域”HTTP Handler。
+//
+// 典型业务链路：
+// 1) 前端调用 /api/v1/order/create 创建订单并锁座
+// 2) 前端调用 /api/v1/order/pay 生成支付信息（或直接推进）
+// 3) 本项目提供 /api/v1/pay/mock_notify 便于本地用 ApiPost 模拟异步回调
+// 4) 网关把关键操作委托给 order_service（Kitex RPC），自身仅做鉴权/参数/聚合响应
 package order
 
 import (
 	"context"
+	"encoding/json"
 	"example_shop/common/config"
-	"fmt"
+	"example_shop/common/db"
 	"example_shop/internal/gateway/http/dto"
 	"example_shop/internal/gateway/http/middleware"
-	"example_shop/internal/ticket_service/model"
-	"example_shop/kitex_gen/orderapi/orderservice"
+	"example_shop/internal/model"
 	kitexorder "example_shop/kitex_gen/orderapi"
+	"example_shop/kitex_gen/orderapi/orderservice"
 	"example_shop/pkg/alipay"
-	"example_shop/common/db"
-	"encoding/json"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -65,7 +72,7 @@ func (h *Handler) CreateOrder(ctx context.Context, c *app.RequestContext) {
 
 	var u model.UserInfo
 	if err := db.MysqlDB.Where("user_id = ?", userID).First(&u).Error; err != nil {
-		c.JSON(500, dto.BaseHTTPResp{Code: 500, Msg: "查询用户信息失败: " + err.Error()})
+		c.JSON(500, dto.BaseHTTPResp{Code: 500, Msg: "查询用户信息失败"})
 		return
 	}
 	if !strings.EqualFold(strings.TrimSpace(u.RealNameVerified), "VERIFIED") {
@@ -195,10 +202,10 @@ func (h *Handler) PayOrder(ctx context.Context, c *app.RequestContext) {
 						ttl = 2 * time.Hour
 					}
 					payload, _ := json.Marshal(map[string]string{
-						"user_id": userID,
+						"user_id":  userID,
 						"order_id": req.OrderID,
-						"pay_no":  payNo,
-						"amount":  fmt.Sprintf("%.2f", orderResp.Order.TotalAmount),
+						"pay_no":   payNo,
+						"amount":   fmt.Sprintf("%.2f", orderResp.Order.TotalAmount),
 					})
 					_ = db.Rdb.Set(db.Ctx, "pay:alipay:out_trade_no:"+payNo, string(payload), ttl).Err()
 				}

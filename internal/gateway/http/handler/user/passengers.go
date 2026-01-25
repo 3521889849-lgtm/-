@@ -6,7 +6,7 @@ import (
 	"example_shop/common/encrypt"
 	"example_shop/internal/gateway/http/dto"
 	"example_shop/internal/gateway/http/middleware"
-	"example_shop/internal/ticket_service/model"
+	"example_shop/internal/model"
 
 	"github.com/cloudwego/hertz/pkg/app"
 )
@@ -44,4 +44,3 @@ func (h *Handler) ListPassengers(ctx context.Context, c *app.RequestContext) {
 
 	c.JSON(200, dto.ListPassengersHTTPResp{Code: 200, Msg: "success", Passengers: out})
 }
-

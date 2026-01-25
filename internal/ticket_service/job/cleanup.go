@@ -3,7 +3,7 @@ package job
 import (
 	"database/sql"
 	"example_shop/common/db"
-	"example_shop/internal/ticket_service/model"
+	model2 "example_shop/internal/model"
 	"time"
 
 	"gorm.io/gorm"
@@ -29,7 +29,7 @@ func cleanupOnce() {
 
 	for {
 		var ids []string
-		err := db.MysqlDB.Model(&model.OrderInfo{}).
+		err := db.MysqlDB.Model(&model2.OrderInfo{}).
 			Select("order_id").
 			Where("order_status IN ('PENDING_PAY','PAYING') AND pay_deadline IS NOT NULL AND pay_deadline < ?", now).
 			Limit(500).
@@ -39,7 +39,7 @@ func cleanupOnce() {
 		}
 
 		_ = db.MysqlDB.Transaction(func(tx *gorm.DB) error {
-			if err := tx.Model(&model.SeatSegmentOccupancy{}).
+			if err := tx.Model(&model2.SeatSegmentOccupancy{}).
 				Where("order_id IN ? AND status = ?", ids, "LOCKED").
 				Updates(map[string]any{
 					"status":           "CANCELLED",
@@ -48,7 +48,7 @@ func cleanupOnce() {
 				return err
 			}
 
-			if err := tx.Model(&model.OrderInfo{}).
+			if err := tx.Model(&model2.OrderInfo{}).
 				Where("order_id IN ? AND order_status IN ('PENDING_PAY','PAYING')", ids).
 				Updates(map[string]any{"order_status": "CANCELLED"}).Error; err != nil {
 				return err

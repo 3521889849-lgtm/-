@@ -1,3 +1,8 @@
+// Package ticket 是网关侧“票务查询域”HTTP Handler：
+// - 站点联想（输入联想）
+// - 车次搜索（分页/过滤/排序）
+// - 车次详情（余票/最低价）
+// - WebSocket 推送余票（用于前端实时刷新）
 package ticket
 
 import (

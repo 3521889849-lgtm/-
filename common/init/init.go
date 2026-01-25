@@ -41,7 +41,7 @@ func Init() {
 	// 3. 初始化Redis连接
 	// 用于缓存、分布式锁、会话存储等
 	if err := db.RedisInit(); err != nil {
-		log.Fatalf("Redis连接初始化失败: %v", err)
+		log.Printf("Redis连接初始化失败: %v", err)
 	}
 	
 	// 所有初始化完成

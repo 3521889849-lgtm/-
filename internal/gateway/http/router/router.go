@@ -1,11 +1,11 @@
 /*
  * Gateway路由注册模块
- * 
+ *
  * 功能说明：
  * - 定义所有HTTP API路由规则
  * - 将HTTP请求映射到对应的处理函数
  * - 统一管理API版本和路径前缀
- * 
+ *
  * 路由规则：
  * - 所有API统一前缀：/api/v1
  * - RESTful风格：POST用于创建/操作，GET用于查询
@@ -19,17 +19,18 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
 )
 
 // RegisterRoutes 注册所有API路由
-// 
+//
 // 参数说明：
 //   - h: Hertz服务器实例
 //   - app: 包含所有RPC客户端的应用实例
-// 
+//
 // 路由分组策略：
 //   - /api: 所有API的统一前缀
 //   - /v1: API版本号，便于后续版本升级
@@ -92,29 +93,17 @@ func RegisterRoutes(h *server.Hertz, app *handler.App) {
 	authed.GET("/order/info", app.Order.GetOrder)
 	// GET /api/v1/order/list - 查询订单列表
 	authed.GET("/order/list", app.Order.ListOrders)
-	
-	// TODO: 后续可扩展其他服务的路由
-	// v1.POST("/order/create", app.CreateOrder)
-	//
-	// 票务查询模块底层支撑：
-	// - 读写分离：查询走MySQL只读库（若配置了Mysql.ReadReplica）
-	// - 多级缓存：余票优先走Redis，未命中才查库
-	// - 游标分页：cursor+limit避免深分页
 }
+
+var (
+	webCacheMu  sync.RWMutex
+	webCache    = map[string][]byte{}
+	webCacheErr = map[string]error{}
+)
 
 func serveWeb(name, contentType string) app.HandlerFunc {
 	return func(ctx context.Context, c *app.RequestContext) {
-		var (
-			data []byte
-			err  error
-		)
-		for _, base := range []string{"web", filepath.Join("..", "web"), filepath.Join("..", "..", "web"), filepath.Join("..", "..", "..", "web")} {
-			path := filepath.Join(base, name)
-			data, err = os.ReadFile(path)
-			if err == nil {
-				break
-			}
-		}
+		data, err := loadWebAsset(name)
 		if err != nil {
 			if strings.HasSuffix(name, ".html") {
 				c.String(404, "web资源不存在："+name)
@@ -126,4 +115,38 @@ func serveWeb(name, contentType string) app.HandlerFunc {
 		c.Header("Content-Type", contentType)
 		c.Write(data)
 	}
+}
+
+func loadWebAsset(name string) ([]byte, error) {
+	webCacheMu.RLock()
+	if data, ok := webCache[name]; ok {
+		webCacheMu.RUnlock()
+		return data, nil
+	}
+	if err, ok := webCacheErr[name]; ok {
+		webCacheMu.RUnlock()
+		return nil, err
+	}
+	webCacheMu.RUnlock()
+
+	var (
+		data []byte
+		err  error
+	)
+	for _, base := range []string{"web", filepath.Join("..", "web"), filepath.Join("..", "..", "web"), filepath.Join("..", "..", "..", "web")} {
+		path := filepath.Join(base, name)
+		data, err = os.ReadFile(path)
+		if err == nil {
+			break
+		}
+	}
+
+	webCacheMu.Lock()
+	if err != nil {
+		webCacheErr[name] = err
+	} else {
+		webCache[name] = data
+	}
+	webCacheMu.Unlock()
+	return data, err
 }

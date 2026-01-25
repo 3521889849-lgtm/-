@@ -12,14 +12,15 @@ import (
 	"example_shop/common/config"
 	"example_shop/common/db"
 	"example_shop/common/encrypt"
-	"example_shop/internal/ticket_service/model"
+	"example_shop/internal/model"
 	kitexuser "example_shop/kitex_gen/user"
 	"example_shop/pkg/jwt"
 	"example_shop/pkg/realname"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type Service struct{}

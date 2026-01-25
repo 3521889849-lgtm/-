@@ -57,7 +57,8 @@ func RedisInit() error {
 	// Ping：发送PING命令测试Redis是否可用
 	_, err := Rdb.Ping(Ctx).Result()
 	if err != nil {
-		return err
+		Rdb = nil
+		return fmt.Errorf("redis连接失败：%w", err)
 	}
 	
 	fmt.Println("Redis连接成功")
