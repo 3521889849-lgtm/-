@@ -19,7 +19,6 @@ type SeatSegmentOccupancy struct {
 	Status         string         `gorm:"column:status;type:VARCHAR(20);NOT NULL;index:idx_occ_status_expire,priority:1;comment:占用状态：LOCKED-锁定，SOLD-已售，CANCELLED-已取消" json:"status"`
 	LockExpireTime sql.NullTime   `gorm:"column:lock_expire_time;type:DATETIME;index:idx_occ_status_expire,priority:2;comment:锁定到期时间（仅LOCKED有效）" json:"lock_expire_time,omitempty"`
 	CreatedAt      time.Time      `gorm:"column:created_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:创建时间" json:"created_at"`
-	UpdatedAt      time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
+	UpdatedAt      time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
 	DeletedAt      gorm.DeletedAt `gorm:"column:deleted_at;type:DATETIME;index;comment:软删除时间" json:"deleted_at,omitempty"`
 }
-

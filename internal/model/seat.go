@@ -19,7 +19,7 @@ type SeatInfo struct {
 	LockExpireTime sql.NullTime   `gorm:"column:lock_expire_time;type:DATETIME;index:idx_lock_expire_time;comment:锁定过期时间（状态为LOCKED时有效）" json:"lock_expire_time,omitempty"`
 	LockOrderID    sql.NullString `gorm:"column:lock_order_id;type:VARCHAR(64);comment:锁定关联的订单号（状态为LOCKED时有效）" json:"lock_order_id,omitempty"`
 	CreatedAt      time.Time      `gorm:"column:created_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:创建时间" json:"created_at"`
-	UpdatedAt      time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
+	UpdatedAt      time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
 	DeletedAt      gorm.DeletedAt `gorm:"column:deleted_at;type:DATETIME;index;comment:软删除时间" json:"deleted_at,omitempty"`
 }
 
@@ -50,6 +50,6 @@ type TicketRuleConfig struct {
 	Version         uint32         `gorm:"column:version;type:INT;NOT NULL;default:1;comment:规则版本（用于回滚）" json:"version"`
 	Operator        string         `gorm:"column:operator;type:VARCHAR(64);NOT NULL;comment:操作人（后台管理员ID）" json:"operator"`
 	CreatedAt       time.Time      `gorm:"column:created_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:创建时间" json:"created_at"`
-	UpdatedAt       time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
+	UpdatedAt       time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
 	DeletedAt       gorm.DeletedAt `gorm:"column:deleted_at;type:DATETIME;index;comment:软删除时间" json:"deleted_at,omitempty"`
 }

@@ -21,7 +21,7 @@ type TrainInfo struct {
 	SeatLayout       *JSON          `gorm:"column:seat_layout;type:JSON;NOT NULL;comment:座位布局（如硬座118座、硬卧66座，JSON存储各类型座位总数）" json:"seat_layout"`
 	Status           string         `gorm:"column:status;type:VARCHAR(20);NOT NULL;default:'NORMAL';index:idx_train_status;comment:车次状态：NORMAL-正常运营，STOPPED-停运，TEMP-临时加开" json:"status"`
 	CreatedAt        time.Time      `gorm:"column:created_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:创建时间" json:"created_at"`
-	UpdatedAt        time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
+	UpdatedAt        time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
 	DeletedAt        gorm.DeletedAt `gorm:"column:deleted_at;type:DATETIME;index;comment:软删除时间" json:"deleted_at,omitempty"`
 }
 
@@ -35,6 +35,6 @@ type TrainStationPass struct {
 	DepartureTime sql.NullTime   `gorm:"column:departure_time;type:DATETIME;comment:离站时间（到达站为NULL）" json:"departure_time,omitempty"`
 	StopMinutes   uint32         `gorm:"column:stop_minutes;type:INT;default:0;comment:停靠时长（分钟）" json:"stop_minutes"`
 	CreatedAt     time.Time      `gorm:"column:created_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:创建时间" json:"created_at"`
-	UpdatedAt     time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
 	DeletedAt     gorm.DeletedAt `gorm:"column:deleted_at;type:DATETIME;index;comment:软删除时间" json:"deleted_at,omitempty"`
 }

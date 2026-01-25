@@ -17,7 +17,7 @@ type UserInfo struct {
 	RealNameVerified string         `gorm:"column:real_name_verified;type:VARCHAR(20);NOT NULL;default:'UNVERIFIED';comment:实名验证状态：UNVERIFIED-未验证，VERIFIED-已验证" json:"real_name_verified"`
 	Status           string         `gorm:"column:status;type:VARCHAR(20);NOT NULL;default:'NORMAL';comment:用户状态：NORMAL-正常，DISABLED-禁用" json:"status"`
 	CreatedAt        time.Time      `gorm:"column:created_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:创建时间" json:"created_at"`
-	UpdatedAt        time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
+	UpdatedAt        time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
 	DeletedAt        gorm.DeletedAt `gorm:"column:deleted_at;type:DATETIME;index;comment:软删除时间" json:"deleted_at,omitempty"`
 }
 
@@ -30,6 +30,6 @@ type PassengerInfo struct {
 	IDCard    string         `gorm:"column:id_card;type:VARCHAR(32);NOT NULL;comment:乘客身份证号（脱敏存储）" json:"id_card"`
 	SeatID    string         `gorm:"column:seat_id;type:VARCHAR(64);NOT NULL;comment:乘客关联座位ID，关联seat_info.seat_id" json:"seat_id"`
 	CreatedAt time.Time      `gorm:"column:created_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:创建时间" json:"created_at"`
-	UpdatedAt time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
+	UpdatedAt time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at;type:DATETIME;index;comment:软删除时间" json:"deleted_at,omitempty"`
 }

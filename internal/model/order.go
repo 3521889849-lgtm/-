@@ -27,7 +27,7 @@ type OrderInfo struct {
 	RefundStatus  string         `gorm:"column:refund_status;type:VARCHAR(20);default:'NO_REFUND';comment:退款状态：NO_REFUND-未退款，REFUNDING-退款中，REFUNDED-已退款" json:"refund_status"`
 	IdempotentKey string         `gorm:"column:idempotent_key;type:VARCHAR(128);NOT NULL;uniqueIndex;comment:幂等键（user_id+train_id+座位组合MD5）" json:"idempotent_key,omitempty"`
 	CreatedAt     time.Time      `gorm:"column:created_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:创建时间" json:"created_at"`
-	UpdatedAt     time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
 	DeletedAt     gorm.DeletedAt `gorm:"column:deleted_at;type:DATETIME;index;comment:软删除时间" json:"deleted_at,omitempty"`
 }
 
@@ -40,7 +40,7 @@ type OrderSeatRelation struct {
 	SeatPrice  float64        `gorm:"column:seat_price;type:DECIMAL(10,2);NOT NULL;comment:座位单价（冗余字段，优化查询）" json:"seat_price"`
 	IsRefunded string         `gorm:"column:is_refunded;type:VARCHAR(20);NOT NULL;default:'NO';comment: 是否已退款：NO-未退款，YES-已退款" json:"is_refunded"`
 	CreatedAt  time.Time      `gorm:"column:created_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:创建时间" json:"created_at"`
-	UpdatedAt  time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
+	UpdatedAt  time.Time      `gorm:"column:updated_at;type:DATETIME;NOT NULL;default:CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`
 	DeletedAt  gorm.DeletedAt `gorm:"column:deleted_at;type:DATETIME;index;comment:软删除时间" json:"deleted_at,omitempty"`
 }
 
