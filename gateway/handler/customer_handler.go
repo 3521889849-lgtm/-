@@ -107,23 +107,12 @@ func (h *CustomerHandler) ListCustomerService(w http.ResponseWriter, r *http.Req
 	}
 
 	deptID := strings.TrimSpace(r.URL.Query().Get("dept_id"))
-	pageStr := r.URL.Query().Get("page")
-	pageSizeStr := r.URL.Query().Get("page_size")
-
-	page, _ := strconv.Atoi(pageStr)
-	if page <= 0 {
-		page = 1
-	}
-
-	pageSize, _ := strconv.Atoi(pageSizeStr)
-	if pageSize <= 0 {
-		pageSize = 10
-	}
+	page, pageSize := parsePaginationParams(r, 10)
 
 	req := &customer.ListCustomerServiceReq{
 		DeptId:   deptID,
-		Page:     int32(page),
-		PageSize: int32(pageSize),
+		Page:     page,
+		PageSize: pageSize,
 	}
 
 	resp, err := h.client.ListCustomerService(r.Context(), req)
@@ -486,8 +475,11 @@ func (h *CustomerHandler) AutoSchedule(w http.ResponseWriter, r *http.Request) {
 // 请求体参数:
 //   - cs_id: 申请人客服ID（必填）
 //   - apply_type: 申请类型（0-请假，1-调班）
-//   - target_date: 目标日期（必填，格式 YYYY-MM-DD）
-//   - shift_id: 班次ID（必填）
+//   - start_date: 开始日期（必填，格式 YYYY-MM-DD）
+//   - end_date: 结束日期（必填，格式 YYYY-MM-DD）
+//   - start_period: 开始时段（0-全天，1-上午，2-下午）
+//   - end_period: 结束时段
+//   - shift_id: 班次ID（调班时必填）
 //   - target_cs_id: 调班目标客服ID（调班时必填）
 //   - reason: 申请原因
 //
@@ -498,14 +490,25 @@ func (h *CustomerHandler) ApplyLeaveTransfer(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// 从token获取操作人信息
+	operatorInfo := getOperatorInfoFromContext(r.Context())
+	if operatorInfo.ID == "" {
+		respondJSON(w, http.StatusOK, &customer.ApplyLeaveTransferResp{
+			BaseResp: &customer.BaseResp{Code: 401, Msg: "请先登录"},
+		})
+		return
+	}
+
 	// 请求体参数结构
 	var body struct {
-		CsID       string `json:"cs_id"`        // 申请人客服ID
-		ApplyType  int8   `json:"apply_type"`   // 申请类型：0-请假，1-调班
-		TargetDate string `json:"target_date"`  // 目标日期
-		ShiftID    int64  `json:"shift_id"`     // 班次ID
-		TargetCsID string `json:"target_cs_id"` // 调班目标客服ID
-		Reason     string `json:"reason"`       // 申请原因
+		ApplyType   int8   `json:"apply_type"`   // 申请类型：0-请假，1-调班
+		StartDate   string `json:"start_date"`   // 开始日期
+		EndDate     string `json:"end_date"`     // 结束日期
+		StartPeriod int8   `json:"start_period"` // 开始时段
+		EndPeriod   int8   `json:"end_period"`   // 结束时段
+		ShiftID     int64  `json:"shift_id"`     // 班次ID
+		TargetCsID  string `json:"target_cs_id"` // 调班目标客服ID
+		Reason      string `json:"reason"`       // 申请原因
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		respondJSON(w, http.StatusBadRequest, &customer.ApplyLeaveTransferResp{
@@ -513,42 +516,59 @@ func (h *CustomerHandler) ApplyLeaveTransfer(w http.ResponseWriter, r *http.Requ
 		})
 		return
 	}
-	body.CsID = strings.TrimSpace(body.CsID)
-	body.TargetDate = strings.TrimSpace(body.TargetDate)
+	body.StartDate = strings.TrimSpace(body.StartDate)
+	body.EndDate = strings.TrimSpace(body.EndDate)
 	body.TargetCsID = strings.TrimSpace(body.TargetCsID)
 	body.Reason = strings.TrimSpace(body.Reason)
-	if body.CsID == "" || body.TargetDate == "" || body.ShiftID <= 0 {
+
+	if body.StartDate == "" {
 		respondJSON(w, http.StatusBadRequest, &customer.ApplyLeaveTransferResp{
-			BaseResp: &customer.BaseResp{Code: 400, Msg: "cs_id, target_date and shift_id are required"},
+			BaseResp: &customer.BaseResp{Code: 400, Msg: "start_date is required"},
 		})
 		return
 	}
-	if _, err := time.Parse("2006-01-02", body.TargetDate); err != nil {
+	if body.EndDate == "" {
+		body.EndDate = body.StartDate
+	}
+
+	if _, err := time.Parse("2006-01-02", body.StartDate); err != nil {
 		respondJSON(w, http.StatusBadRequest, &customer.ApplyLeaveTransferResp{
-			BaseResp: &customer.BaseResp{Code: 400, Msg: "target_date must be YYYY-MM-DD"},
+			BaseResp: &customer.BaseResp{Code: 400, Msg: "start_date must be YYYY-MM-DD"},
 		})
 		return
 	}
+	if _, err := time.Parse("2006-01-02", body.EndDate); err != nil {
+		respondJSON(w, http.StatusBadRequest, &customer.ApplyLeaveTransferResp{
+			BaseResp: &customer.BaseResp{Code: 400, Msg: "end_date must be YYYY-MM-DD"},
+		})
+		return
+	}
+
 	if body.ApplyType != 0 && body.ApplyType != 1 {
 		respondJSON(w, http.StatusBadRequest, &customer.ApplyLeaveTransferResp{
 			BaseResp: &customer.BaseResp{Code: 400, Msg: "apply_type must be 0 or 1"},
 		})
 		return
 	}
-	if body.ApplyType == 1 && body.TargetCsID == "" {
+	if body.ApplyType == 1 && (body.TargetCsID == "" || body.ShiftID <= 0) {
 		respondJSON(w, http.StatusBadRequest, &customer.ApplyLeaveTransferResp{
-			BaseResp: &customer.BaseResp{Code: 400, Msg: "target_cs_id is required for transfer"},
+			BaseResp: &customer.BaseResp{Code: 400, Msg: "target_cs_id and shift_id are required for transfer"},
 		})
 		return
 	}
 
+	// 使用token中的操作人信息作为申请人
 	req := &customer.ApplyLeaveTransferReq{
-		CsId:       body.CsID,
-		ApplyType:  body.ApplyType,
-		TargetDate: body.TargetDate,
-		ShiftId:    body.ShiftID,
-		TargetCsId: body.TargetCsID,
-		Reason:     body.Reason,
+		CsId:        operatorInfo.ID,
+		ApplyType:   body.ApplyType,
+		StartDate:   body.StartDate,
+		EndDate:     body.EndDate,
+		StartPeriod: body.StartPeriod,
+		EndPeriod:   body.EndPeriod,
+		ShiftId:     body.ShiftID,
+		TargetCsId:  body.TargetCsID,
+		Reason:      body.Reason,
+		TargetDate:  body.StartDate, // 兼容旧字段
 	}
 	resp, err := h.client.ApplyLeaveTransfer(r.Context(), req)
 	if err != nil {
@@ -567,6 +587,8 @@ func (h *CustomerHandler) ApplyLeaveTransfer(w http.ResponseWriter, r *http.Requ
 //   - apply_id: 申请单ID（必填）
 //   - approval_status: 审批状态（1-通过，2-拒绝）
 //   - approver_id: 审批人ID（必填）
+//   - approver_name: 审批人姓名
+//   - approval_remark: 审批备注
 //
 // 响应: 审批结果
 func (h *CustomerHandler) ApproveLeaveTransfer(w http.ResponseWriter, r *http.Request) {
@@ -575,11 +597,20 @@ func (h *CustomerHandler) ApproveLeaveTransfer(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// 从token获取操作人信息
+	operatorInfo := getOperatorInfoFromContext(r.Context())
+	if operatorInfo.ID == "" {
+		respondJSON(w, http.StatusOK, &customer.ApproveLeaveTransferResp{
+			BaseResp: &customer.BaseResp{Code: 401, Msg: "请先登录"},
+		})
+		return
+	}
+
 	// 请求体参数结构
 	var body struct {
 		ApplyID        int64  `json:"apply_id"`        // 申请单ID
 		ApprovalStatus int8   `json:"approval_status"` // 审批状态
-		ApproverID     string `json:"approver_id"`     // 审批人ID
+		ApprovalRemark string `json:"approval_remark"` // 审批备注
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		respondJSON(w, http.StatusBadRequest, &customer.ApproveLeaveTransferResp{
@@ -587,7 +618,6 @@ func (h *CustomerHandler) ApproveLeaveTransfer(w http.ResponseWriter, r *http.Re
 		})
 		return
 	}
-	body.ApproverID = strings.TrimSpace(body.ApproverID)
 	if body.ApplyID <= 0 {
 		respondJSON(w, http.StatusBadRequest, &customer.ApproveLeaveTransferResp{
 			BaseResp: &customer.BaseResp{Code: 400, Msg: "apply_id is required"},
@@ -600,19 +630,182 @@ func (h *CustomerHandler) ApproveLeaveTransfer(w http.ResponseWriter, r *http.Re
 		})
 		return
 	}
-	if body.ApproverID == "" {
-		respondJSON(w, http.StatusBadRequest, &customer.ApproveLeaveTransferResp{
-			BaseResp: &customer.BaseResp{Code: 400, Msg: "approver_id is required"},
+
+	// 使用token中的操作人信息
+	req := &customer.ApproveLeaveTransferReq{
+		ApplyId:        body.ApplyID,
+		ApprovalStatus: body.ApprovalStatus,
+		ApproverId:     operatorInfo.ID,
+		ApproverName:   operatorInfo.Name,
+		ApprovalRemark: body.ApprovalRemark,
+	}
+	resp, err := h.client.ApproveLeaveTransfer(r.Context(), req)
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"code": 500,
+			"msg":  "Internal server error: " + err.Error(),
+		})
+		return
+	}
+	respondJSON(w, http.StatusOK, resp)
+}
+
+// ApplyChainSwap 提交链式调班申请
+func (h *CustomerHandler) ApplyChainSwap(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		respondError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// 从token获取操作人信息
+	operatorInfo := getOperatorInfoFromContext(r.Context())
+	if operatorInfo.ID == "" {
+		respondJSON(w, http.StatusOK, map[string]interface{}{"code": 401, "msg": "请先登录"})
+		return
+	}
+
+	var body struct {
+		DeptID string `json:"dept_id"`
+		Reason string `json:"reason"`
+		Items  []struct {
+			CsID           string `json:"cs_id"`
+			FromScheduleID int64  `json:"from_schedule_id"`
+			ToScheduleID   int64  `json:"to_schedule_id"`
+			Step           int32  `json:"step"`
+		} `json:"items"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		respondJSON(w, http.StatusBadRequest, map[string]interface{}{"code": 400, "msg": "invalid json"})
+		return
+	}
+
+	// 使用token中的操作人信息作为申请人
+	req := &customer.ApplyChainSwapReq{
+		ApplicantId: operatorInfo.ID,
+		DeptId:      body.DeptID,
+		Reason:      body.Reason,
+	}
+	for _, it := range body.Items {
+		req.Items = append(req.Items, &customer.ChainSwapItem{
+			CsId:           it.CsID,
+			FromScheduleId: it.FromScheduleID,
+			ToScheduleId:   it.ToScheduleID,
+			Step:           it.Step,
+		})
+	}
+
+	resp, err := h.client.ApplyChainSwap(r.Context(), req)
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, map[string]interface{}{"code": 500, "msg": err.Error()})
+		return
+	}
+	respondJSON(w, http.StatusOK, resp)
+}
+
+// ApproveChainSwap 审批链式调班申请
+func (h *CustomerHandler) ApproveChainSwap(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		respondError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// 从token获取操作人信息
+	operatorInfo := getOperatorInfoFromContext(r.Context())
+	if operatorInfo.ID == "" {
+		respondJSON(w, http.StatusOK, map[string]interface{}{"code": 401, "msg": "请先登录"})
+		return
+	}
+
+	var body struct {
+		RequestID      int64  `json:"request_id"`
+		ApprovalStatus int8   `json:"approval_status"`
+		ApprovalRemark string `json:"approval_remark"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		respondJSON(w, http.StatusBadRequest, map[string]interface{}{"code": 400, "msg": "invalid json"})
+		return
+	}
+
+	// 使用token中的操作人信息
+	req := &customer.ApproveChainSwapReq{
+		RequestId:      body.RequestID,
+		ApprovalStatus: body.ApprovalStatus,
+		ApproverId:     operatorInfo.ID,
+		ApproverName:   operatorInfo.Name,
+		ApprovalRemark: body.ApprovalRemark,
+	}
+
+	resp, err := h.client.ApproveChainSwap(r.Context(), req)
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, map[string]interface{}{"code": 500, "msg": err.Error()})
+		return
+	}
+	respondJSON(w, http.StatusOK, resp)
+}
+
+// ListChainSwap 查询链式调班申请列表
+// 请求方式: GET
+// 请求参数:
+//   - status: 状态筛选（-1=全部, 0=待审批, 1=已通过, 2=已拒绝）
+//   - keyword: 关键词搜索
+//   - page: 页码（默认1）
+//   - page_size: 每页数量（默认20）
+func (h *CustomerHandler) ListChainSwap(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		respondError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	status := int8(-1)
+	if v := strings.TrimSpace(r.URL.Query().Get("status")); v != "" {
+		n, err := strconv.ParseInt(v, 10, 8)
+		if err == nil {
+			status = int8(n)
+		}
+	}
+	keyword := strings.TrimSpace(r.URL.Query().Get("keyword"))
+
+	page, pageSize := parsePaginationParams(r, 20)
+
+	req := &customer.ListChainSwapReq{
+		Status:   status,
+		Keyword:  keyword,
+		Page:     page,
+		PageSize: pageSize,
+	}
+	resp, err := h.client.ListChainSwap(r.Context(), req)
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"code": 500,
+			"msg":  "Internal server error: " + err.Error(),
+		})
+		return
+	}
+	respondJSON(w, http.StatusOK, resp)
+}
+
+// GetChainSwap 获取链式调班申请详情
+// 请求方式: GET
+// 请求参数:
+//   - swap_id: 链式调班申请ID（必填）
+func (h *CustomerHandler) GetChainSwap(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		respondError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	swapIDStr := strings.TrimSpace(r.URL.Query().Get("swap_id"))
+	swapID, err := strconv.ParseInt(swapIDStr, 10, 64)
+	if err != nil || swapID <= 0 {
+		respondJSON(w, http.StatusBadRequest, map[string]interface{}{
+			"code": 400,
+			"msg":  "swap_id is required",
 		})
 		return
 	}
 
-	req := &customer.ApproveLeaveTransferReq{
-		ApplyId:        body.ApplyID,
-		ApprovalStatus: body.ApprovalStatus,
-		ApproverId:     body.ApproverID,
-	}
-	resp, err := h.client.ApproveLeaveTransfer(r.Context(), req)
+	req := &customer.GetChainSwapReq{SwapId: swapID}
+	resp, err := h.client.GetChainSwap(r.Context(), req)
 	if err != nil {
 		respondJSON(w, http.StatusInternalServerError, map[string]interface{}{
 			"code": 500,
@@ -680,26 +873,14 @@ func (h *CustomerHandler) ListLeaveTransfer(w http.ResponseWriter, r *http.Reque
 	}
 	keyword := strings.TrimSpace(r.URL.Query().Get("keyword"))
 
-	page := int32(1)
-	if v := strings.TrimSpace(r.URL.Query().Get("page")); v != "" {
-		n, err := strconv.ParseInt(v, 10, 32)
-		if err == nil && n > 0 {
-			page = int32(n)
-		}
-	}
-	pageSize := int32(20)
-	if v := strings.TrimSpace(r.URL.Query().Get("page_size")); v != "" {
-		n, err := strconv.ParseInt(v, 10, 32)
-		if err == nil && n > 0 {
-			pageSize = int32(n)
-		}
-	}
+	page, pageSize := parsePaginationParams(r, 20)
 
 	req := &customer.ListLeaveTransferReq{
 		ApprovalStatus: approvalStatus,
 		Keyword:        keyword,
 		Page:           page,
 		PageSize:       pageSize,
+		OperatorId:     resolveCustomerCsID(r.Context(), ""), // 获取当前操作人ID
 	}
 	resp, err := h.client.ListLeaveTransfer(r.Context(), req)
 	if err != nil {
@@ -712,7 +893,42 @@ func (h *CustomerHandler) ListLeaveTransfer(w http.ResponseWriter, r *http.Reque
 	respondJSON(w, http.StatusOK, resp)
 }
 
+// GetLeaveAuditLog 获取请假/调班申请的审计日志
+// 请求方式: GET
+// 请求参数:
+//   - apply_id: 申请单ID（必填）
+//
+// 响应: 审计日志列表
+func (h *CustomerHandler) GetLeaveAuditLog(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		respondError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	applyIDStr := strings.TrimSpace(r.URL.Query().Get("apply_id"))
+	applyID, err := strconv.ParseInt(applyIDStr, 10, 64)
+	if err != nil || applyID <= 0 {
+		respondJSON(w, http.StatusBadRequest, map[string]interface{}{
+			"code": 400,
+			"msg":  "apply_id is required",
+		})
+		return
+	}
+
+	req := &customer.GetLeaveAuditLogReq{ApplyId: applyID}
+	resp, err := h.client.GetLeaveAuditLog(r.Context(), req)
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"code": 500,
+			"msg":  "Internal server error: " + err.Error(),
+		})
+		return
+	}
+	respondJSON(w, http.StatusOK, resp)
+}
+
 // ListScheduleGrid 查询排班表格数据
+
 func (h *CustomerHandler) ListScheduleGrid(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		respondError(w, http.StatusMethodNotAllowed, "Method not allowed")
@@ -736,6 +952,13 @@ func (h *CustomerHandler) ListScheduleGrid(w http.ResponseWriter, r *http.Reques
 		DeptId:    deptID,
 		TeamId:    teamID,
 	}
+
+	// 如果是客服角色，只能查看自己的排班
+	operator := getOperatorInfoFromContext(r.Context())
+	if operator.Role == "customer_service" {
+		req.CsId = operator.ID
+	}
+
 	resp, err := h.client.ListScheduleGrid(r.Context(), req)
 	if err != nil {
 		respondJSON(w, http.StatusInternalServerError, map[string]interface{}{
@@ -1008,8 +1231,6 @@ func (h *CustomerHandler) ListConversation(w http.ResponseWriter, r *http.Reques
 	csID = resolveCustomerCsID(r.Context(), csID)
 	keyword := strings.TrimSpace(r.URL.Query().Get("keyword"))
 	statusStr := strings.TrimSpace(r.URL.Query().Get("status"))
-	pageStr := r.URL.Query().Get("page")
-	pageSizeStr := r.URL.Query().Get("page_size")
 
 	status := int64(-1)
 	if statusStr != "" {
@@ -1018,21 +1239,14 @@ func (h *CustomerHandler) ListConversation(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	page, _ := strconv.Atoi(pageStr)
-	if page <= 0 {
-		page = 1
-	}
-	pageSize, _ := strconv.Atoi(pageSizeStr)
-	if pageSize <= 0 {
-		pageSize = 20
-	}
+	page, pageSize := parsePaginationParams(r, 20)
 
 	req := &customer.ListConversationReq{
 		CsId:     csID,
 		Keyword:  keyword,
 		Status:   int8(status),
-		Page:     int32(page),
-		PageSize: int32(pageSize),
+		Page:     page,
+		PageSize: pageSize,
 	}
 	resp, err := h.client.ListConversation(r.Context(), req)
 	if err != nil {
@@ -1060,8 +1274,6 @@ func (h *CustomerHandler) ListConversationHistory(w http.ResponseWriter, r *http
 	csID = resolveCustomerCsID(r.Context(), csID)
 	keyword := strings.TrimSpace(r.URL.Query().Get("keyword"))
 	statusStr := strings.TrimSpace(r.URL.Query().Get("status"))
-	pageStr := r.URL.Query().Get("page")
-	pageSizeStr := r.URL.Query().Get("page_size")
 
 	// 状态参数处理：默认为-1（不筛选）
 	status := int64(-1)
@@ -1072,22 +1284,15 @@ func (h *CustomerHandler) ListConversationHistory(w http.ResponseWriter, r *http
 	}
 
 	// 分页参数处理：默认第1页，每页20条
-	page, _ := strconv.Atoi(pageStr)
-	if page <= 0 {
-		page = 1
-	}
-	pageSize, _ := strconv.Atoi(pageSizeStr)
-	if pageSize <= 0 {
-		pageSize = 20
-	}
+	page, pageSize := parsePaginationParams(r, 20)
 
 	// 构建 RPC 请求对象
 	req := &customer.ListConversationHistoryReq{
 		CsId:     csID,
 		Keyword:  keyword,
 		Status:   int8(status),
-		Page:     int32(page),
-		PageSize: int32(pageSize),
+		Page:     page,
+		PageSize: pageSize,
 	}
 	// 调用 RPC 服务查询历史会话
 	resp, err := h.client.ListConversationHistory(r.Context(), req)
@@ -1120,18 +1325,9 @@ func (h *CustomerHandler) ListConversationMessage(w http.ResponseWriter, r *http
 	}
 
 	// 解析分页与排序参数
-	pageStr := r.URL.Query().Get("page")
-	pageSizeStr := r.URL.Query().Get("page_size")
 	orderAscStr := strings.TrimSpace(r.URL.Query().Get("order_asc"))
 
-	page, _ := strconv.Atoi(pageStr)
-	if page <= 0 {
-		page = 1
-	}
-	pageSize, _ := strconv.Atoi(pageSizeStr)
-	if pageSize <= 0 {
-		pageSize = 50 // 默认每页50条
-	}
+	page, pageSize := parsePaginationParams(r, 50)
 	orderAsc := int64(0) // 默认倒序(0)
 	if orderAscStr != "" {
 		if v, err := strconv.ParseInt(orderAscStr, 10, 8); err == nil {
@@ -1142,8 +1338,8 @@ func (h *CustomerHandler) ListConversationMessage(w http.ResponseWriter, r *http
 	// 构建 RPC 请求对象
 	req := &customer.ListConversationMessageReq{
 		ConvId:   convID,
-		Page:     int32(page),
-		PageSize: int32(pageSize),
+		Page:     page,
+		PageSize: pageSize,
 		OrderAsc: int8(orderAsc),
 	}
 	// 调用 RPC 服务查询消息
@@ -1419,8 +1615,6 @@ func (h *CustomerHandler) ListQuickReply(w http.ResponseWriter, r *http.Request)
 	keyword := strings.TrimSpace(r.URL.Query().Get("keyword"))
 	replyTypeStr := strings.TrimSpace(r.URL.Query().Get("reply_type"))
 	isPublicStr := strings.TrimSpace(r.URL.Query().Get("is_public"))
-	pageStr := r.URL.Query().Get("page")
-	pageSizeStr := r.URL.Query().Get("page_size")
 
 	replyType := int64(-1)
 	if replyTypeStr != "" {
@@ -1435,21 +1629,14 @@ func (h *CustomerHandler) ListQuickReply(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	page, _ := strconv.Atoi(pageStr)
-	if page <= 0 {
-		page = 1
-	}
-	pageSize, _ := strconv.Atoi(pageSizeStr)
-	if pageSize <= 0 {
-		pageSize = 50
-	}
+	page, pageSize := parsePaginationParams(r, 50)
 
 	req := &customer.ListQuickReplyReq{
 		Keyword:   keyword,
 		ReplyType: int8(replyType),
 		IsPublic:  int8(isPublic),
-		Page:      int32(page),
-		PageSize:  int32(pageSize),
+		Page:      page,
+		PageSize:  pageSize,
 	}
 	resp, err := h.client.ListQuickReply(r.Context(), req)
 	if err != nil {
@@ -1987,6 +2174,76 @@ func resolveCustomerCsID(ctx context.Context, csID string) string {
 		return fmt.Sprintf("CS%d", userID)
 	}
 	return strings.TrimSpace(csID)
+}
+
+// OperatorInfo 操作人信息结构
+type OperatorInfo struct {
+	ID   string // 操作人ID（客服ID格式）
+	Name string // 操作人姓名
+	Role string // 操作人角色（admin/manager/customer_service）
+}
+
+// getOperatorInfoFromContext 从token上下文获取操作人信息
+// 自动从JWT token中提取当前登录用户的ID、姓名和角色
+// 用于审批、创建等操作的身份记录
+func getOperatorInfoFromContext(ctx context.Context) OperatorInfo {
+	info := OperatorInfo{}
+
+	// 获取姓名
+	info.Name = strings.TrimSpace(middleware.GetUserNameFromContext(ctx))
+
+	// 获取角色和用户ID
+	roleCode := middleware.GetRoleCodeFromContext(ctx)
+	userID := middleware.GetUserIDFromContext(ctx)
+
+	switch roleCode {
+	case middleware.RoleAdmin:
+		info.Role = "admin"
+		if info.Name != "" {
+			info.ID = info.Name
+		} else {
+			info.ID = fmt.Sprintf("ADMIN%d", userID)
+		}
+	case middleware.RoleCustomerService:
+		info.Role = "customer_service"
+		// 优先使用用户名（如果符合客服ID格式）
+		if info.Name != "" {
+			upper := strings.ToUpper(info.Name)
+			if strings.HasPrefix(upper, "CS") || strings.HasPrefix(upper, "KF") {
+				info.ID = info.Name
+			}
+		}
+		// 如果用户名不符合格式，使用用户ID生成
+		if info.ID == "" && userID > 0 {
+			info.ID = fmt.Sprintf("CS%d", userID)
+		}
+	default:
+		info.Role = roleCode
+		if userID > 0 {
+			info.ID = fmt.Sprintf("USER%d", userID)
+		}
+	}
+
+	return info
+}
+
+// parsePaginationParams 从请求中解析分页参数
+// 返回 page, pageSize (int32)
+func parsePaginationParams(r *http.Request, defaultPageSize int) (int32, int32) {
+	pageStr := r.URL.Query().Get("page")
+	pageSizeStr := r.URL.Query().Get("page_size")
+
+	page, _ := strconv.Atoi(pageStr)
+	if page <= 0 {
+		page = 1
+	}
+
+	pageSize, _ := strconv.Atoi(pageSizeStr)
+	if pageSize <= 0 {
+		pageSize = defaultPageSize
+	}
+
+	return int32(page), int32(pageSize)
 }
 
 // Register 用户注册
@@ -2786,10 +3043,13 @@ func (h *CustomerHandler) ArchiveConversations(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// 获取操作人信息
+	operatorInfo := getOperatorInfoFromContext(r.Context())
+
 	req := &customer.ArchiveConversationsReq{
 		EndDate:       body.EndDate,
 		RetentionDays: body.RetentionDays,
-		OperatorId:    body.OperatorID,
+		OperatorId:    operatorInfo.ID,
 	}
 
 	resp, err := h.client.ArchiveConversations(r.Context(), req)
@@ -2888,6 +3148,222 @@ func (h *CustomerHandler) QueryArchivedConversation(w http.ResponseWriter, r *ht
 	}
 
 	resp, err := h.client.QueryArchivedConversation(r.Context(), req)
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"code": 500,
+			"msg":  "Internal server error: " + err.Error(),
+		})
+		return
+	}
+	respondJSON(w, http.StatusOK, resp)
+}
+
+// ============ 心跳与在线状态管理 ============
+
+// Heartbeat 客服心跳上报
+// 客服端定期调用此接口保持在线状态
+// 请求方式: POST
+// 请求体参数:
+//   - cs_id: 客服ID（必填）
+//
+// 响应: 在线状态确认
+func (h *CustomerHandler) Heartbeat(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		respondError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	var body struct {
+		CsID string `json:"cs_id"` // 客服ID
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		respondJSON(w, http.StatusBadRequest, &customer.HeartbeatResp{
+			BaseResp: &customer.BaseResp{Code: 400, Msg: "invalid json body"},
+		})
+		return
+	}
+	body.CsID = strings.TrimSpace(body.CsID)
+	if body.CsID == "" {
+		respondJSON(w, http.StatusBadRequest, &customer.HeartbeatResp{
+			BaseResp: &customer.BaseResp{Code: 400, Msg: "cs_id is required"},
+		})
+		return
+	}
+
+	req := &customer.HeartbeatReq{
+		CsId: body.CsID,
+	}
+	resp, err := h.client.Heartbeat(r.Context(), req)
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"code": 500,
+			"msg":  "Internal server error: " + err.Error(),
+		})
+		return
+	}
+	respondJSON(w, http.StatusOK, resp)
+}
+
+// ListOnlineCustomers 获取当前在线客服列表
+// 请求方式: GET
+// 查询参数:
+//   - dept_id: 部门ID（可选，按部门筛选）
+//
+// 响应: 在线客服列表
+func (h *CustomerHandler) ListOnlineCustomers(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		respondError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	deptID := strings.TrimSpace(r.URL.Query().Get("dept_id"))
+
+	req := &customer.ListOnlineCustomersReq{
+		DeptId: deptID,
+	}
+	resp, err := h.client.ListOnlineCustomers(r.Context(), req)
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"code": 500,
+			"msg":  "Internal server error: " + err.Error(),
+		})
+		return
+	}
+	respondJSON(w, http.StatusOK, resp)
+}
+
+// ============ 调班辅助接口 ============
+
+// GetSwapCandidates 获取调班候选人
+// 返回指定日期有排班的其他客服及班次信息
+// 请求方式: GET
+// 查询参数:
+//   - cs_id: 发起人客服ID（必填）
+//   - target_date: 调班日期（必填）
+//
+// 响应: 可调班候选人列表
+func (h *CustomerHandler) GetSwapCandidates(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		respondError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	csID := strings.TrimSpace(r.URL.Query().Get("cs_id"))
+	targetDate := strings.TrimSpace(r.URL.Query().Get("target_date"))
+
+	if csID == "" || targetDate == "" {
+		respondJSON(w, http.StatusBadRequest, &customer.GetSwapCandidatesResp{
+			BaseResp: &customer.BaseResp{Code: 400, Msg: "cs_id and target_date are required"},
+		})
+		return
+	}
+
+	req := &customer.GetSwapCandidatesReq{
+		CsId:       csID,
+		TargetDate: targetDate,
+	}
+	resp, err := h.client.GetSwapCandidates(r.Context(), req)
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"code": 500,
+			"msg":  "Internal server error: " + err.Error(),
+		})
+		return
+	}
+	respondJSON(w, http.StatusOK, resp)
+}
+
+// CheckSwapConflict 检测调班冲突
+// 检测发起人与目标客服之间是否存在调班冲突
+// 请求方式: POST
+// 请求体参数:
+//   - initiator_cs_id: 发起人客服ID（必填）
+//   - target_cs_id: 目标客服ID（必填）
+//   - target_date: 调班日期（必填）
+//
+// 响应: 冲突检测结果
+func (h *CustomerHandler) CheckSwapConflict(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		respondError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	var body struct {
+		InitiatorCsID string `json:"initiator_cs_id"` // 发起人客服ID
+		TargetCsID    string `json:"target_cs_id"`    // 目标客服ID
+		TargetDate    string `json:"target_date"`     // 调班日期
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		respondJSON(w, http.StatusBadRequest, &customer.CheckSwapConflictResp{
+			BaseResp: &customer.BaseResp{Code: 400, Msg: "invalid json body"},
+		})
+		return
+	}
+	body.InitiatorCsID = strings.TrimSpace(body.InitiatorCsID)
+	body.TargetCsID = strings.TrimSpace(body.TargetCsID)
+	body.TargetDate = strings.TrimSpace(body.TargetDate)
+
+	if body.InitiatorCsID == "" || body.TargetCsID == "" || body.TargetDate == "" {
+		respondJSON(w, http.StatusBadRequest, &customer.CheckSwapConflictResp{
+			BaseResp: &customer.BaseResp{Code: 400, Msg: "initiator_cs_id, target_cs_id and target_date are required"},
+		})
+		return
+	}
+
+	req := &customer.CheckSwapConflictReq{
+		InitiatorCsId: body.InitiatorCsID,
+		TargetCsId:    body.TargetCsID,
+		TargetDate:    body.TargetDate,
+	}
+	resp, err := h.client.CheckSwapConflict(r.Context(), req)
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"code": 500,
+			"msg":  "Internal server error: " + err.Error(),
+		})
+		return
+	}
+	respondJSON(w, http.StatusOK, resp)
+}
+
+// ============ 退出登录 ============
+
+// Logout 客服退出登录
+// 将客服置为离线状态
+// 请求方式: POST
+// 请求体参数:
+//   - cs_id: 客服ID（必填）
+//
+// 响应: 退出结果
+func (h *CustomerHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		respondError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	var body struct {
+		CsID string `json:"cs_id"` // 客服ID
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		respondJSON(w, http.StatusBadRequest, map[string]interface{}{
+			"code": 400,
+			"msg":  "invalid json body",
+		})
+		return
+	}
+	body.CsID = strings.TrimSpace(body.CsID)
+	if body.CsID == "" {
+		respondJSON(w, http.StatusBadRequest, map[string]interface{}{
+			"code": 400,
+			"msg":  "cs_id is required",
+		})
+		return
+	}
+
+	req := &customer.LogoutReq{
+		CsId: body.CsID,
+	}
+	resp, err := h.client.Logout(r.Context(), req)
 	if err != nil {
 		respondJSON(w, http.StatusInternalServerError, map[string]interface{}{
 			"code": 500,

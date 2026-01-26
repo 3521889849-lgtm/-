@@ -41,7 +41,16 @@
 
 					<view v-for="c in gridFilteredCustomers" :key="c.cs_id" class="grid-row">
 						<view class="grid-cell grid-sticky grid-name">
-							<text class="grid-cs-name">{{ c.cs_name }}</text>
+							<view class="grid-name-wrapper">
+								<text class="grid-cs-name">{{ c.cs_name }}</text>
+								<!-- 在线状态指示器 - 4种状态 -->
+								<view 
+									class="online-indicator" 
+									:class="getStatusClass(c.cs_id)"
+									@click="showStatusDetail(c.cs_id)"
+									:title="getStatusTooltip(c.cs_id)"
+								></view>
+							</view>
 							<text class="grid-cs-id">{{ c.cs_id }}</text>
 						</view>
 						<view
@@ -196,7 +205,10 @@
 				gridShiftNameMap: {},
 				gridShiftMinStaffMap: {},
 				gridDateShiftCount: {},
-				gridCustomerKeyword: ''
+				gridCustomerKeyword: '',
+				// 在线状态追踪
+				onlineCustomers: {}, // 在线客服详情映射 { cs_id: { is_online: 0-3, last_seen_at, login_at, current_shift } }
+				heartbeatTimer: null // 心跳定时器
 			}
 		},
 		computed: {
@@ -252,13 +264,101 @@
 			this.scheduleDate = todayYMD()
 			this.initGridRange()
 			this.loadInit()
+			this.loadOnlineStatus()
+			this.startHeartbeat()
+		},
+		beforeUnmount() {
+			this.stopHeartbeat()
 		},
 		methods: {
+			// 获取客服在线状态（0-3）
+			getCustomerOnlineStatus(csId) {
+				const info = this.onlineCustomers[csId]
+				if (!info) return 3 // 默认离线
+				return info.is_online || 3
+			},
+			// 获取状态提示文本
+			getStatusTooltip(csId) {
+				const info = this.onlineCustomers[csId]
+				if (!info) return '离线'
+				const statusText = ['🟢在线', '🟡在线非班次', '🔴异常离线', '⚪离线'][info.is_online] || '⚪离线'
+				let detail = statusText
+				if (info.last_seen_at) {
+					detail += `\n最后心跳: ${info.last_seen_at}`
+				}
+				if (info.login_at) {
+					detail += `\n登录时间: ${info.login_at}`
+				}
+				if (info.current_shift) {
+					detail += `\n当前班次: ${info.current_shift}`
+				}
+				return detail
+			},
+			// 加载在线状态数据
+			async loadOnlineStatus() {
+				try {
+					const res = await api.listOnlineCustomers({
+						date: todayYMD()
+					})
+					ensureOk(res)
+					const map = {}
+					;(res.customers || []).forEach((c) => {
+						map[c.cs_id] = {
+							is_online: c.is_online || 3,
+							last_seen_at: c.last_seen_at || '',
+							login_at: c.login_at || '',
+							current_shift: c.current_shift || ''
+						}
+					})
+					this.onlineCustomers = map
+				} catch (e) {
+					console.error('加载在线状态失败:', e)
+					this.onlineCustomers = {}
+				}
+			},
+			// 启动心跳定时器
+			startHeartbeat() {
+				if (this.heartbeatTimer) {
+					clearInterval(this.heartbeatTimer)
+				}
+				// 每30秒刷新一次在线状态
+				this.heartbeatTimer = setInterval(() => {
+					this.loadOnlineStatus()
+				}, 30000)
+			},
+			// 停止心跳定时器
+			stopHeartbeat() {
+				if (this.heartbeatTimer) {
+					clearInterval(this.heartbeatTimer)
+					this.heartbeatTimer = null
+				}
+			},
 			setViewMode(mode) {
 				this.viewMode = mode
 				if (mode === 'grid') {
 					this.reloadGrid()
+					this.loadOnlineStatus()
 				}
+			},
+			// 获取状态样式类名
+			getStatusClass(csId) {
+				const status = this.getCustomerOnlineStatus(csId)
+				const classMap = {
+					0: 'status-online',        // 🟢在线
+					1: 'status-online-off',    // 🟡在线非班次
+					2: 'status-abnormal',      // 🔴异常离线
+					3: 'status-offline'        // ⚪离线
+				}
+				return classMap[status] || 'status-offline'
+			},
+			// 显示状态详情
+			showStatusDetail(csId) {
+				const tooltip = this.getStatusTooltip(csId)
+				uni.showModal({
+					title: '在线状态详情',
+					content: tooltip,
+					showCancel: false
+				})
 			},
 			initGridRange() {
 				const today = new Date()
@@ -882,5 +982,76 @@
 	.action-bar {
 		margin-top: 20px;
 		margin-bottom: 40px;
+	}
+
+	/* 客服名称和在线状态包裹器 */
+	.grid-name-wrapper {
+		flex-direction: row;
+		align-items: center;
+	}
+
+	/* 在线状态指示器 */
+	.online-indicator {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		margin-left: 6px;
+		cursor: pointer;
+		transition: transform 0.2s;
+	}
+
+	.online-indicator:active {
+		transform: scale(1.2);
+	}
+
+	/* 🟢在线 - 绿色呼吸动画 */
+	.online-indicator.status-online {
+		background-color: #34c759;
+		box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.7);
+		animation: pulse-animation 1.5s infinite;
+	}
+
+	/* 🟡在线非班次 - 黄色 */
+	.online-indicator.status-online-off {
+		background-color: #ffcc00;
+		box-shadow: 0 0 4px rgba(255, 204, 0, 0.5);
+	}
+
+	/* 🔴异常离线 - 红色闪烁 */
+	.online-indicator.status-abnormal {
+		background-color: #ff3b30;
+		box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7);
+		animation: blink-animation 1s infinite;
+	}
+
+	/* ⚪离线 - 灰色 */
+	.online-indicator.status-offline {
+		background-color: #c4c4c6;
+	}
+
+	/* 呼吸脉冲动画（绿色在线） */
+	@keyframes pulse-animation {
+		0% {
+			transform: scale(0.95);
+			box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.7);
+		}
+		70% {
+			transform: scale(1);
+			box-shadow: 0 0 0 8px rgba(52, 199, 89, 0);
+		}
+		100% {
+			transform: scale(0.95);
+			box-shadow: 0 0 0 0 rgba(52, 199, 89, 0);
+		}
+	}
+
+	/* 闪烁动画（红色异常） */
+	@keyframes blink-animation {
+		0%, 50%, 100% {
+			opacity: 1;
+		}
+		25%, 75% {
+			opacity: 0.3;
+		}
 	}
 </style>

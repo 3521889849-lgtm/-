@@ -27,7 +27,7 @@ import (
 	"example_shop/pkg/logger"
 	"example_shop/pkg/trace"
 	"example_shop/service/customer/config"
-	"example_shop/service/customer/dal"
+	"example_shop/service/customer/repository"
 	"example_shop/service/customer/handler"
 	"example_shop/service/customer/kitex_gen/customer/customerservice"
 
@@ -58,12 +58,12 @@ func main() {
 	defer trace.ShutdownJaeger()
 
 	// 4. 初始化数据库连接（包括 MySQL 和 Redis）
-	if err := dal.InitDB(); err != nil {
+	if err := repository.InitDB(); err != nil {
 		logger.Fatal("Failed to init database", zap.Error(err))
 	}
 
 	// 5. 执行数据表迁移（自动创建/更新表结构）
-	if err := dal.MigrateTables(); err != nil {
+	if err := repository.MigrateTables(); err != nil {
 		logger.Fatal("Failed to migrate tables", zap.Error(err))
 	}
 	fmt.Println("Customer RPC Service Starting...")
@@ -82,8 +82,8 @@ func main() {
 
 	// 8. 创建并启动 Kitex RPC 服务器（带追踪中间件）
 	svr := customerservice.NewServer(
-		handler.NewCustomerServiceHandler(),              // 业务处理器
-		server.WithServiceAddr(addr),                      // 服务地址
+		handler.NewCustomerServiceHandler(),                             // 业务处理器
+		server.WithServiceAddr(addr),                                    // 服务地址
 		server.WithMiddleware(trace.ServerTraceMiddleware(serviceName)), // 链路追踪中间件
 	)
 

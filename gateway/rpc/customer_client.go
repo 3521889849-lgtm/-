@@ -191,6 +191,50 @@ func (c *CustomerClient) ApproveLeaveTransfer(ctx context.Context, req *customer
 	return resp, err
 }
 
+// ApplyChainSwap 提交链式调班申请
+func (c *CustomerClient) ApplyChainSwap(ctx context.Context, req *customer.ApplyChainSwapReq) (*customer.ApplyChainSwapResp, error) {
+	ctx, span := c.wrapContext(ctx, "ApplyChainSwap")
+	defer span.End()
+	resp, err := c.client.ApplyChainSwap(ctx, req)
+	if err != nil {
+		span.SetError(err)
+	}
+	return resp, err
+}
+
+// ApproveChainSwap 审批链式调班申请
+func (c *CustomerClient) ApproveChainSwap(ctx context.Context, req *customer.ApproveChainSwapReq) (*customer.ApproveChainSwapResp, error) {
+	ctx, span := c.wrapContext(ctx, "ApproveChainSwap")
+	defer span.End()
+	resp, err := c.client.ApproveChainSwap(ctx, req)
+	if err != nil {
+		span.SetError(err)
+	}
+	return resp, err
+}
+
+// ListChainSwap 查询链式调班申请列表
+func (c *CustomerClient) ListChainSwap(ctx context.Context, req *customer.ListChainSwapReq) (*customer.ListChainSwapResp, error) {
+	ctx, span := c.wrapContext(ctx, "ListChainSwap")
+	defer span.End()
+	resp, err := c.client.ListChainSwap(ctx, req)
+	if err != nil {
+		span.SetError(err)
+	}
+	return resp, err
+}
+
+// GetChainSwap 获取链式调班申请详情
+func (c *CustomerClient) GetChainSwap(ctx context.Context, req *customer.GetChainSwapReq) (*customer.GetChainSwapResp, error) {
+	ctx, span := c.wrapContext(ctx, "GetChainSwap")
+	defer span.End()
+	resp, err := c.client.GetChainSwap(ctx, req)
+	if err != nil {
+		span.SetError(err)
+	}
+	return resp, err
+}
+
 // GetLeaveTransfer 获取请假/调班申请详情
 func (c *CustomerClient) GetLeaveTransfer(ctx context.Context, req *customer.GetLeaveTransferReq) (*customer.GetLeaveTransferResp, error) {
 	ctx, span := c.wrapContext(ctx, "GetLeaveTransfer")
@@ -207,6 +251,17 @@ func (c *CustomerClient) ListLeaveTransfer(ctx context.Context, req *customer.Li
 	ctx, span := c.wrapContext(ctx, "ListLeaveTransfer")
 	defer span.End()
 	resp, err := c.client.ListLeaveTransfer(ctx, req)
+	if err != nil {
+		span.SetError(err)
+	}
+	return resp, err
+}
+
+// GetLeaveAuditLog 获取请假/调班申请的审计日志
+func (c *CustomerClient) GetLeaveAuditLog(ctx context.Context, req *customer.GetLeaveAuditLogReq) (*customer.GetLeaveAuditLogResp, error) {
+	ctx, span := c.wrapContext(ctx, "GetLeaveAuditLog")
+	defer span.End()
+	resp, err := c.client.GetLeaveAuditLog(ctx, req)
 	if err != nil {
 		span.SetError(err)
 	}
@@ -617,6 +672,18 @@ func (c *CustomerClient) Register(ctx context.Context, req *customer.RegisterReq
 	return resp, err
 }
 
+// Logout 用户退出登录
+// 更新客服在线状态为离线
+func (c *CustomerClient) Logout(ctx context.Context, req *customer.LogoutReq) (*customer.LogoutResp, error) {
+	ctx, span := c.wrapContext(ctx, "Logout")
+	defer span.End()
+	resp, err := c.client.Logout(ctx, req)
+	if err != nil {
+		span.SetError(err)
+	}
+	return resp, err
+}
+
 // ==================== 消息加密与脱敏接口 ====================
 
 // EncryptMessage 加密消息内容
@@ -681,6 +748,54 @@ func (c *CustomerClient) QueryArchivedConversation(ctx context.Context, req *cus
 	ctx, span := c.wrapContext(ctx, "QueryArchivedConversation")
 	defer span.End()
 	resp, err := c.client.QueryArchivedConversation(ctx, req)
+	if err != nil {
+		span.SetError(err)
+	}
+	return resp, err
+}
+
+// ==================== 心跳与在线状态接口 ====================
+
+// Heartbeat 客服心跳上报
+func (c *CustomerClient) Heartbeat(ctx context.Context, req *customer.HeartbeatReq) (*customer.HeartbeatResp, error) {
+	ctx, span := c.wrapContext(ctx, "Heartbeat")
+	defer span.End()
+	resp, err := c.client.Heartbeat(ctx, req)
+	if err != nil {
+		span.SetError(err)
+	}
+	return resp, err
+}
+
+// ListOnlineCustomers 获取在线客服列表
+func (c *CustomerClient) ListOnlineCustomers(ctx context.Context, req *customer.ListOnlineCustomersReq) (*customer.ListOnlineCustomersResp, error) {
+	ctx, span := c.wrapContext(ctx, "ListOnlineCustomers")
+	defer span.End()
+	resp, err := c.client.ListOnlineCustomers(ctx, req)
+	if err != nil {
+		span.SetError(err)
+	}
+	return resp, err
+}
+
+// ==================== 调班辅助接口 ====================
+
+// GetSwapCandidates 获取调班候选人
+func (c *CustomerClient) GetSwapCandidates(ctx context.Context, req *customer.GetSwapCandidatesReq) (*customer.GetSwapCandidatesResp, error) {
+	ctx, span := c.wrapContext(ctx, "GetSwapCandidates")
+	defer span.End()
+	resp, err := c.client.GetSwapCandidates(ctx, req)
+	if err != nil {
+		span.SetError(err)
+	}
+	return resp, err
+}
+
+// CheckSwapConflict 检测调班冲突
+func (c *CustomerClient) CheckSwapConflict(ctx context.Context, req *customer.CheckSwapConflictReq) (*customer.CheckSwapConflictResp, error) {
+	ctx, span := c.wrapContext(ctx, "CheckSwapConflict")
+	defer span.End()
+	resp, err := c.client.CheckSwapConflict(ctx, req)
 	if err != nil {
 		span.SetError(err)
 	}

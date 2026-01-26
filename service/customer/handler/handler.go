@@ -1,4 +1,4 @@
-// Package handler 实现客服系统RPC服务的处理逻辑
+﻿// Package handler 实现客服系统RPC服务的处理逻辑
 // 包含客服管理、排班管理、会话管理、快捷回复等核心业务功能
 package handler
 
@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"example_shop/service/customer/crypto"             // 消息加密模块
-	"example_shop/service/customer/dal"                // 数据访问层
+	"example_shop/pkg/ai"                              // AI/NLP分类模块
+	"example_shop/pkg/crypto"                          // 消息加密模块
 	"example_shop/service/customer/kitex_gen/customer" // Kitex生成的客服服务接口定义
 	"example_shop/service/customer/model"              // 数据模型定义
-	"example_shop/service/customer/nlp"                // NLP分类模块
+	"example_shop/service/customer/repository"         // 数据访问层
 
 	"gorm.io/gorm" // ORM框架
 )
@@ -49,13 +49,13 @@ func NewCustomerServiceHandler() *CustomerServiceHandler {
 func getShiftConfigAllCached(ctx context.Context) ([]*customer.ShiftConfig, error) {
 	// 尝试从缓存获取
 	var cached []*customer.ShiftConfig
-	if ok, _ := dal.CacheGetJSON(ctx, cacheKeyShiftConfigAll, &cached); ok && cached != nil {
+	if ok, _ := repository.CacheGetJSON(ctx, cacheKeyShiftConfigAll, &cached); ok && cached != nil {
 		return cached, nil
 	}
 
 	// 缓存未命中，从数据库查询
 	var shifts []model.ShiftConfig
-	if err := dal.DB.WithContext(ctx).Model(&model.ShiftConfig{}).Order("shift_id asc").Find(&shifts).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Model(&model.ShiftConfig{}).Order("shift_id asc").Find(&shifts).Error; err != nil {
 		return nil, err
 	}
 
@@ -74,7 +74,7 @@ func getShiftConfigAllCached(ctx context.Context) ([]*customer.ShiftConfig, erro
 	}
 
 	// 写入缓存
-	_ = dal.CacheSetJSON(ctx, cacheKeyShiftConfigAll, out, cacheTTLShiftConfig)
+	_ = repository.CacheSetJSON(ctx, cacheKeyShiftConfigAll, out, cacheTTLShiftConfig)
 	return out, nil
 }
 
@@ -84,13 +84,13 @@ func getShiftConfigAllCached(ctx context.Context) ([]*customer.ShiftConfig, erro
 func getConvCategoryAllCached(ctx context.Context) ([]*customer.ConvCategory, error) {
 	// 尝试从缓存获取
 	var cached []*customer.ConvCategory
-	if ok, _ := dal.CacheGetJSON(ctx, cacheKeyConvCategoryAll, &cached); ok && cached != nil {
+	if ok, _ := repository.CacheGetJSON(ctx, cacheKeyConvCategoryAll, &cached); ok && cached != nil {
 		return cached, nil
 	}
 
 	// 缓存未命中，从数据库查询（按排序号和分类ID升序）
 	var cats []model.ConvCategory
-	if err := dal.DB.WithContext(ctx).Model(&model.ConvCategory{}).Order("sort_no asc").Order("category_id asc").Find(&cats).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Model(&model.ConvCategory{}).Order("sort_no asc").Order("category_id asc").Find(&cats).Error; err != nil {
 		return nil, err
 	}
 
@@ -106,14 +106,14 @@ func getConvCategoryAllCached(ctx context.Context) ([]*customer.ConvCategory, er
 	}
 
 	// 写入缓存
-	_ = dal.CacheSetJSON(ctx, cacheKeyConvCategoryAll, out, cacheTTLConvCategory)
+	_ = repository.CacheSetJSON(ctx, cacheKeyConvCategoryAll, out, cacheTTLConvCategory)
 	return out, nil
 }
 
 // GetCustomerService 获取客服信息
 func (h *CustomerServiceHandler) GetCustomerService(ctx context.Context, req *customer.GetCustomerServiceReq) (*customer.GetCustomerServiceResp, error) {
 	var cs model.CustomerService
-	err := dal.DB.Where("cs_id = ?", req.CsId).First(&cs).Error
+	err := repository.DB.Where("cs_id = ?", req.CsId).First(&cs).Error
 	if err != nil {
 		return &customer.GetCustomerServiceResp{
 			BaseResp: &customer.BaseResp{
@@ -145,7 +145,7 @@ func (h *CustomerServiceHandler) ListCustomerService(ctx context.Context, req *c
 	var csList []model.CustomerService
 	var total int64
 
-	query := dal.DB.Model(&model.CustomerService{})
+	query := repository.DB.Model(&model.CustomerService{})
 	if req.DeptId != "" {
 		query = query.Where("dept_id = ?", req.DeptId)
 	}
@@ -239,14 +239,14 @@ func (h *CustomerServiceHandler) CreateShiftConfig(ctx context.Context, req *cus
 	}
 
 	// 写入数据库
-	if err := dal.DB.Create(&shift).Error; err != nil {
+	if err := repository.DB.Create(&shift).Error; err != nil {
 		return &customer.CreateShiftConfigResp{
 			BaseResp: &customer.BaseResp{Code: 500, Msg: "create failed: " + err.Error()},
 		}, nil
 	}
 
 	// 清除班次配置缓存
-	_ = dal.CacheDel(ctx, cacheKeyShiftConfigAll)
+	_ = repository.CacheDel(ctx, cacheKeyShiftConfigAll)
 
 	return &customer.CreateShiftConfigResp{
 		BaseResp: &customer.BaseResp{Code: 0, Msg: "success"},
@@ -328,7 +328,7 @@ func (h *CustomerServiceHandler) UpdateShiftConfig(ctx context.Context, req *cus
 
 	// 查询现有班次配置
 	var cur model.ShiftConfig
-	if err := dal.DB.WithContext(ctx).Where("shift_id = ?", req.Shift.ShiftId).First(&cur).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Where("shift_id = ?", req.Shift.ShiftId).First(&cur).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &customer.UpdateShiftConfigResp{BaseResp: &customer.BaseResp{Code: 404, Msg: "shift not found"}}, nil
 		}
@@ -344,12 +344,12 @@ func (h *CustomerServiceHandler) UpdateShiftConfig(ctx context.Context, req *cus
 	cur.UpdateTime = time.Now()
 
 	// 保存到数据库
-	if err := dal.DB.WithContext(ctx).Save(&cur).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Save(&cur).Error; err != nil {
 		return &customer.UpdateShiftConfigResp{BaseResp: &customer.BaseResp{Code: 500, Msg: "update failed: " + err.Error()}}, nil
 	}
 
 	// 清除班次配置缓存
-	_ = dal.CacheDel(ctx, cacheKeyShiftConfigAll)
+	_ = repository.CacheDel(ctx, cacheKeyShiftConfigAll)
 
 	return &customer.UpdateShiftConfigResp{BaseResp: &customer.BaseResp{Code: 0, Msg: "success"}}, nil
 }
@@ -365,7 +365,7 @@ func (h *CustomerServiceHandler) DeleteShiftConfig(ctx context.Context, req *cus
 
 	// 检查班次是否已被排班使用
 	var used int64
-	if err := dal.DB.WithContext(ctx).Model(&model.Schedule{}).Where("shift_id = ?", req.ShiftId).Count(&used).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Model(&model.Schedule{}).Where("shift_id = ?", req.ShiftId).Count(&used).Error; err != nil {
 		return &customer.DeleteShiftConfigResp{BaseResp: &customer.BaseResp{Code: 500, Msg: "check failed: " + err.Error()}}, nil
 	}
 	if used > 0 {
@@ -373,7 +373,7 @@ func (h *CustomerServiceHandler) DeleteShiftConfig(ctx context.Context, req *cus
 	}
 
 	// 执行删除
-	res := dal.DB.WithContext(ctx).Where("shift_id = ?", req.ShiftId).Delete(&model.ShiftConfig{})
+	res := repository.DB.WithContext(ctx).Where("shift_id = ?", req.ShiftId).Delete(&model.ShiftConfig{})
 	if res.Error != nil {
 		return &customer.DeleteShiftConfigResp{BaseResp: &customer.BaseResp{Code: 500, Msg: "delete failed: " + res.Error.Error()}}, nil
 	}
@@ -382,7 +382,7 @@ func (h *CustomerServiceHandler) DeleteShiftConfig(ctx context.Context, req *cus
 	}
 
 	// 清除班次配置缓存
-	_ = dal.CacheDel(ctx, cacheKeyShiftConfigAll)
+	_ = repository.CacheDel(ctx, cacheKeyShiftConfigAll)
 
 	return &customer.DeleteShiftConfigResp{BaseResp: &customer.BaseResp{Code: 0, Msg: "success"}}, nil
 }
@@ -401,7 +401,7 @@ func (h *CustomerServiceHandler) AssignSchedule(ctx context.Context, req *custom
 	}
 
 	var conflicts []string // 冲突的客服ID列表
-	err := dal.DB.Transaction(func(tx *gorm.DB) error {
+	err := repository.DB.Transaction(func(tx *gorm.DB) error {
 		// 验证班次是否存在
 		var shift model.ShiftConfig
 		if err := tx.Where("shift_id = ?", req.ShiftId).First(&shift).Error; err != nil {
@@ -495,7 +495,7 @@ func (h *CustomerServiceHandler) ApplyLeaveTransfer(ctx context.Context, req *cu
 		UpdateTime:     now,
 	}
 
-	if err := dal.DB.Create(&apply).Error; err != nil {
+	if err := repository.DB.Create(&apply).Error; err != nil {
 		return &customer.ApplyLeaveTransferResp{BaseResp: &customer.BaseResp{Code: 500, Msg: "create failed: " + err.Error()}}, nil
 	}
 	return &customer.ApplyLeaveTransferResp{BaseResp: &customer.BaseResp{Code: 0, Msg: "success"}, ApplyId: apply.ApplyID}, nil
@@ -515,7 +515,7 @@ func (h *CustomerServiceHandler) ApproveLeaveTransfer(ctx context.Context, req *
 		return &customer.ApproveLeaveTransferResp{BaseResp: &customer.BaseResp{Code: 400, Msg: "invalid approval_status"}}, nil
 	}
 
-	err := dal.DB.Transaction(func(tx *gorm.DB) error {
+	err := repository.DB.Transaction(func(tx *gorm.DB) error {
 		// 查询申请记录
 		var apply model.LeaveTransfer
 		if err := tx.Where("apply_id = ?", req.ApplyId).First(&apply).Error; err != nil {
@@ -682,7 +682,7 @@ func (h *CustomerServiceHandler) GetLeaveTransfer(ctx context.Context, req *cust
 
 	var out row
 	// 联表查询获取完整信息
-	q := dal.DB.WithContext(ctx).
+	q := repository.DB.WithContext(ctx).
 		Table("t_leave_transfer as lt").
 		Select(`
 			lt.apply_id as apply_id,
@@ -810,13 +810,13 @@ func (h *CustomerServiceHandler) ListLeaveTransfer(ctx context.Context, req *cus
 
 	// 查询总数
 	var total int64
-	if err := base(dal.DB).Count(&total).Error; err != nil {
+	if err := base(repository.DB).Count(&total).Error; err != nil {
 		return &customer.ListLeaveTransferResp{BaseResp: &customer.BaseResp{Code: 500, Msg: err.Error()}}, nil
 	}
 
 	// 查询列表数据
 	var rows []row
-	if err := base(dal.DB).
+	if err := base(repository.DB).
 		Select(`
 			lt.apply_id as apply_id,
 			lt.cs_id as cs_id,
@@ -897,10 +897,10 @@ func assignCustomerInternal(userID, userNickname, source string) *assignResult {
 
 	// 检查用户是否已有进行中的会话
 	var existingConv model.Conversation
-	if err := dal.DB.Where("user_id = ? AND status = ?", userID, model.ConvStatusOngoing).First(&existingConv).Error; err == nil {
+	if err := repository.DB.Where("user_id = ? AND status = ?", userID, model.ConvStatusOngoing).First(&existingConv).Error; err == nil {
 		// 用户已有进行中会话，返回现有会话信息
 		var csInfo model.CustomerService
-		dal.DB.Where("cs_id = ?", existingConv.CsID).First(&csInfo)
+		repository.DB.Where("cs_id = ?", existingConv.CsID).First(&csInfo)
 		return &assignResult{
 			ConvID: existingConv.ConvID,
 			CsID:   existingConv.CsID,
@@ -935,7 +935,7 @@ func assignCustomerInternal(userID, userNickname, source string) *assignResult {
 		      (sf.start_time > sf.end_time AND (? >= sf.start_time OR ? <= sf.end_time))
 		  )
 	`
-	if err := dal.DB.Raw(sql, today, currentTime, currentTime, currentTime, currentTime).Scan(&onDutyList).Error; err != nil {
+	if err := repository.DB.Raw(sql, today, currentTime, currentTime, currentTime, currentTime).Scan(&onDutyList).Error; err != nil {
 		return &assignResult{ErrCode: 500, ErrMsg: "failed to query on-duty staff: " + err.Error()}
 	}
 
@@ -954,7 +954,7 @@ func assignCustomerInternal(userID, userNickname, source string) *assignResult {
 		Count int64
 	}
 	var counts []convCount
-	dal.DB.Model(&model.Conversation{}).
+	repository.DB.Model(&model.Conversation{}).
 		Select("cs_id, COUNT(*) as count").
 		Where("cs_id IN ? AND status = ?", csIDs, model.ConvStatusOngoing).
 		Group("cs_id").
@@ -1012,7 +1012,7 @@ func assignCustomerInternal(userID, userNickname, source string) *assignResult {
 		UpdateTime:     now,
 	}
 
-	if err := dal.DB.Create(&conv).Error; err != nil {
+	if err := repository.DB.Create(&conv).Error; err != nil {
 		return &assignResult{ErrCode: 500, ErrMsg: "failed to create conversation: " + err.Error()}
 	}
 
@@ -1025,7 +1025,7 @@ func assignCustomerInternal(userID, userNickname, source string) *assignResult {
 		IsQuickReply: 0,
 		SendTime:     now,
 	}
-	dal.DB.Create(&welcomeMsg)
+	repository.DB.Create(&welcomeMsg)
 
 	return &assignResult{
 		ConvID: convID,
@@ -1096,7 +1096,7 @@ func (h *CustomerServiceHandler) TransferConversation(ctx context.Context, req *
 	now := time.Now()
 
 	// 使用事务确保数据一致性
-	err := dal.DB.Transaction(func(tx *gorm.DB) error {
+	err := repository.DB.Transaction(func(tx *gorm.DB) error {
 		// 1. 查询并锁定会话记录
 		var conv model.Conversation
 		if err := tx.Where("conv_id = ?", convID).First(&conv).Error; err != nil {
@@ -1209,7 +1209,7 @@ func (h *CustomerServiceHandler) EndConversation(ctx context.Context, req *custo
 	var durationSeconds int32
 
 	// 使用事务确保数据一致性
-	err := dal.DB.Transaction(func(tx *gorm.DB) error {
+	err := repository.DB.Transaction(func(tx *gorm.DB) error {
 		// 1. 查询会话记录
 		var conv model.Conversation
 		if err := tx.Where("conv_id = ?", convID).First(&conv).Error; err != nil {
@@ -1244,9 +1244,9 @@ func (h *CustomerServiceHandler) EndConversation(ctx context.Context, req *custo
 
 				if len(categories) > 0 {
 					// 4.3 创建NLP分类器并添加分类规则
-					classifier := nlp.NewClassifier()
+					classifier := ai.NewClassifier()
 					for _, cat := range categories {
-						keywords := nlp.ParseKeywordsJSON(cat.Keywords)
+						keywords := ai.ParseKeywordsJSON(cat.Keywords)
 						classifier.AddCategory(cat.CategoryID, cat.CategoryName, keywords)
 					}
 
@@ -1337,7 +1337,7 @@ func (h *CustomerServiceHandler) AbandonConversation(convID string) *AbandonConv
 	now := time.Now()
 	var durationSeconds int32
 
-	err := dal.DB.Transaction(func(tx *gorm.DB) error {
+	err := repository.DB.Transaction(func(tx *gorm.DB) error {
 		var conv model.Conversation
 		if err := tx.Where("conv_id = ?", convID).First(&conv).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -1420,7 +1420,7 @@ func (h *CustomerServiceHandler) ListScheduleGrid(ctx context.Context, req *cust
 	}
 
 	var csList []model.CustomerService
-	query := dal.DB.WithContext(ctx).Model(&model.CustomerService{})
+	query := repository.DB.WithContext(ctx).Model(&model.CustomerService{})
 	if strings.TrimSpace(req.DeptId) != "" {
 		query = query.Where("dept_id = ?", strings.TrimSpace(req.DeptId))
 	}
@@ -1443,7 +1443,7 @@ func (h *CustomerServiceHandler) ListScheduleGrid(ctx context.Context, req *cust
 
 	var schedules []model.Schedule
 	if len(csIDs) > 0 {
-		if err := dal.DB.WithContext(ctx).Model(&model.Schedule{}).
+		if err := repository.DB.WithContext(ctx).Model(&model.Schedule{}).
 			Where("schedule_date BETWEEN ? AND ? AND cs_id IN ?", startDate, endDate, csIDs).
 			Find(&schedules).Error; err != nil {
 			return &customer.ListScheduleGridResp{BaseResp: &customer.BaseResp{Code: 500, Msg: "查询排班失败: " + err.Error()}}, nil
@@ -1501,7 +1501,7 @@ func (h *CustomerServiceHandler) UpsertScheduleCell(ctx context.Context, req *cu
 		return &customer.UpsertScheduleCellResp{BaseResp: &customer.BaseResp{Code: 400, Msg: "shift_id must be >= 0"}}, nil
 	}
 
-	err := dal.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := repository.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if shiftID > 0 {
 			var shift model.ShiftConfig
 			if err := tx.Where("shift_id = ?", shiftID).First(&shift).Error; err != nil {
@@ -1600,7 +1600,7 @@ func (h *CustomerServiceHandler) AutoSchedule(ctx context.Context, req *customer
 
 	// 2. 获取客服列表
 	var csList []model.CustomerService
-	query := dal.DB.WithContext(ctx).Model(&model.CustomerService{}).Where("status = 1")
+	query := repository.DB.WithContext(ctx).Model(&model.CustomerService{}).Where("status = 1")
 	if strings.TrimSpace(req.DeptId) != "" {
 		query = query.Where("dept_id = ?", req.DeptId)
 	}
@@ -1622,7 +1622,7 @@ func (h *CustomerServiceHandler) AutoSchedule(ctx context.Context, req *customer
 	// 优化点：可以增加"上一个班次"的记录，避免 晚班->早班 的情况
 	csIndex := 0
 
-	err = dal.DB.Transaction(func(tx *gorm.DB) error {
+	err = repository.DB.Transaction(func(tx *gorm.DB) error {
 		for d := st; !d.After(et); d = d.AddDate(0, 0, 1) {
 			dateStr := d.Format("2006-01-02")
 
@@ -1752,13 +1752,13 @@ func (h *CustomerServiceHandler) ListConversation(ctx context.Context, req *cust
 	)
 	{
 		var cached customer.ListConversationResp
-		if ok, _ := dal.CacheGetJSON(ctx, cacheKey, &cached); ok && cached.BaseResp != nil {
+		if ok, _ := repository.CacheGetJSON(ctx, cacheKey, &cached); ok && cached.BaseResp != nil {
 			return &cached, nil
 		}
 	}
 
 	var total int64
-	q := dal.DB.WithContext(ctx).Model(&model.Conversation{})
+	q := repository.DB.WithContext(ctx).Model(&model.Conversation{})
 	if csID != "" {
 		q = q.Where("cs_id = ?", csID)
 	}
@@ -1802,7 +1802,7 @@ INNER JOIN (
   GROUP BY conv_id
 ) t ON m.conv_id = t.conv_id AND m.send_time = t.max_time
 `
-		if err := dal.DB.WithContext(ctx).Raw(raw, convIDs).Scan(&rows).Error; err == nil {
+		if err := repository.DB.WithContext(ctx).Raw(raw, convIDs).Scan(&rows).Error; err == nil {
 			for _, r := range rows {
 				lastMsgMap[r.ConvID] = r
 			}
@@ -1846,7 +1846,7 @@ INNER JOIN (
 		Conversations: items,
 		Total:         total,
 	}
-	_ = dal.CacheSetJSON(ctx, cacheKey, resp, cacheTTLConversationLists)
+	_ = repository.CacheSetJSON(ctx, cacheKey, resp, cacheTTLConversationLists)
 	return resp, nil
 }
 
@@ -1882,14 +1882,14 @@ func (h *CustomerServiceHandler) ListConversationHistory(ctx context.Context, re
 	// 尝试从缓存获取
 	{
 		var cached customer.ListConversationResp
-		if ok, _ := dal.CacheGetJSON(ctx, cacheKey, &cached); ok && cached.BaseResp != nil {
+		if ok, _ := repository.CacheGetJSON(ctx, cacheKey, &cached); ok && cached.BaseResp != nil {
 			return &cached, nil
 		}
 	}
 
 	// 构建查询: 已关闭(0)或转接(2)的会话，且有用户消息
 	var total int64
-	q := dal.DB.WithContext(ctx).
+	q := repository.DB.WithContext(ctx).
 		Model(&model.Conversation{}).
 		Where("status IN ?", []int8{0, 2}).
 		Where("EXISTS (SELECT 1 FROM t_conv_message m WHERE m.conv_id = t_conversation.conv_id AND m.sender_type = ?)", int8(0))
@@ -1939,7 +1939,7 @@ INNER JOIN (
   GROUP BY conv_id
 ) t ON m.conv_id = t.conv_id AND m.send_time = t.max_time
 `
-		if err := dal.DB.WithContext(ctx).Raw(raw, convIDs).Scan(&rows).Error; err == nil {
+		if err := repository.DB.WithContext(ctx).Raw(raw, convIDs).Scan(&rows).Error; err == nil {
 			for _, r := range rows {
 				lastMsgMap[r.ConvID] = r
 			}
@@ -1950,7 +1950,7 @@ INNER JOIN (
 	catNameMap := map[int64]string{}
 	// 这里假设 getConvCategoryAllCached 已经在其他地方定义，或者直接查询数据库
 	var cats []model.ConvCategory
-	_ = dal.DB.WithContext(ctx).Model(&model.ConvCategory{}).Find(&cats).Error
+	_ = repository.DB.WithContext(ctx).Model(&model.ConvCategory{}).Find(&cats).Error
 	for _, c := range cats {
 		catNameMap[c.CategoryID] = c.CategoryName
 	}
@@ -1987,7 +1987,7 @@ INNER JOIN (
 		Total:         total,
 	}
 	// 写入缓存
-	_ = dal.CacheSetJSON(ctx, cacheKey, resp, cacheTTLConversationLists)
+	_ = repository.CacheSetJSON(ctx, cacheKey, resp, cacheTTLConversationLists)
 	return resp, nil
 }
 
@@ -2010,7 +2010,7 @@ func (h *CustomerServiceHandler) ListConversationMessage(ctx context.Context, re
 
 	convID := strings.TrimSpace(req.ConvId)
 	var total int64
-	q := dal.DB.WithContext(ctx).Model(&model.ConvMessage{}).Where("conv_id = ?", convID)
+	q := repository.DB.WithContext(ctx).Model(&model.ConvMessage{}).Where("conv_id = ?", convID)
 	// 查询总数
 	if err := q.Count(&total).Error; err != nil {
 		return &customer.ListConversationMessageResp{BaseResp: &customer.BaseResp{Code: 500, Msg: "查询消息失败: " + err.Error()}}, nil
@@ -2069,7 +2069,7 @@ func (h *CustomerServiceHandler) SendConversationMessage(ctx context.Context, re
 
 	// 查询会话信息
 	var conv model.Conversation
-	if err := dal.DB.WithContext(ctx).Where("conv_id = ?", convID).First(&conv).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Where("conv_id = ?", convID).First(&conv).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return &customer.SendConversationMessageResp{BaseResp: &customer.BaseResp{Code: 404, Msg: "会话不存在"}}, nil
 		}
@@ -2113,7 +2113,7 @@ func (h *CustomerServiceHandler) SendConversationMessage(ctx context.Context, re
 	}
 
 	var msgID int64
-	err := dal.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := repository.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		now := time.Now()
 		m := model.ConvMessage{
 			ConvID:       convID,
@@ -2165,13 +2165,13 @@ func (h *CustomerServiceHandler) ListQuickReply(ctx context.Context, req *custom
 	)
 	{
 		var cached customer.ListQuickReplyResp
-		if ok, _ := dal.CacheGetJSON(ctx, cacheKey, &cached); ok && cached.BaseResp != nil {
+		if ok, _ := repository.CacheGetJSON(ctx, cacheKey, &cached); ok && cached.BaseResp != nil {
 			return &cached, nil
 		}
 	}
 
 	var total int64
-	q := dal.DB.WithContext(ctx).Model(&model.QuickReply{})
+	q := repository.DB.WithContext(ctx).Model(&model.QuickReply{})
 	if kw != "" {
 		q = q.Where("reply_content LIKE ?", "%"+kw+"%")
 	}
@@ -2204,7 +2204,7 @@ func (h *CustomerServiceHandler) ListQuickReply(ctx context.Context, req *custom
 	}
 
 	resp := &customer.ListQuickReplyResp{BaseResp: &customer.BaseResp{Code: 0, Msg: "success"}, Replies: out, Total: total}
-	_ = dal.CacheSetJSON(ctx, cacheKey, resp, cacheTTLQuickReplyList)
+	_ = repository.CacheSetJSON(ctx, cacheKey, resp, cacheTTLQuickReplyList)
 	return resp, nil
 }
 
@@ -2224,7 +2224,7 @@ func (h *CustomerServiceHandler) CreateConvCategory(ctx context.Context, req *cu
 	if c.CreateBy == "" {
 		c.CreateBy = "ADMIN"
 	}
-	if err := dal.DB.WithContext(ctx).Create(&c).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Create(&c).Error; err != nil {
 		code := int32(500)
 		msg := err.Error()
 		if strings.Contains(msg, "Duplicate") || strings.Contains(msg, "duplicate") {
@@ -2232,7 +2232,7 @@ func (h *CustomerServiceHandler) CreateConvCategory(ctx context.Context, req *cu
 		}
 		return &customer.CreateConvCategoryResp{BaseResp: &customer.BaseResp{Code: code, Msg: msg}}, nil
 	}
-	_ = dal.CacheDel(ctx, cacheKeyConvCategoryAll)
+	_ = repository.CacheDel(ctx, cacheKeyConvCategoryAll)
 	return &customer.CreateConvCategoryResp{BaseResp: &customer.BaseResp{Code: 0, Msg: "success"}, CategoryId: c.CategoryID}, nil
 }
 
@@ -2259,7 +2259,7 @@ func (h *CustomerServiceHandler) UpdateConversationClassify(ctx context.Context,
 		"is_core":     req.IsCore,
 		"update_time": time.Now(),
 	}
-	if err := dal.DB.WithContext(ctx).Model(&model.Conversation{}).Where("conv_id = ?", strings.TrimSpace(req.ConvId)).Updates(update).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Model(&model.Conversation{}).Where("conv_id = ?", strings.TrimSpace(req.ConvId)).Updates(update).Error; err != nil {
 		return &customer.UpdateConversationClassifyResp{BaseResp: &customer.BaseResp{Code: 500, Msg: err.Error()}}, nil
 	}
 	return &customer.UpdateConversationClassifyResp{BaseResp: &customer.BaseResp{Code: 0, Msg: "success"}}, nil
@@ -2367,12 +2367,12 @@ func errorsIsRecordNotFound(err error) bool {
 // getConvTagAllCached 获取所有会话标签（带缓存）
 func getConvTagAllCached(ctx context.Context) ([]*customer.ConvTag, error) {
 	var cached []*customer.ConvTag
-	if ok, _ := dal.CacheGetJSON(ctx, cacheKeyConvTagAll, &cached); ok && cached != nil {
+	if ok, _ := repository.CacheGetJSON(ctx, cacheKeyConvTagAll, &cached); ok && cached != nil {
 		return cached, nil
 	}
 
 	var tags []model.ConvTag
-	if err := dal.DB.WithContext(ctx).Model(&model.ConvTag{}).Order("sort_no asc").Order("tag_id asc").Find(&tags).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Model(&model.ConvTag{}).Order("sort_no asc").Order("tag_id asc").Find(&tags).Error; err != nil {
 		return nil, err
 	}
 
@@ -2386,7 +2386,7 @@ func getConvTagAllCached(ctx context.Context) ([]*customer.ConvTag, error) {
 		})
 	}
 
-	_ = dal.CacheSetJSON(ctx, cacheKeyConvTagAll, out, cacheTTLConvTag)
+	_ = repository.CacheSetJSON(ctx, cacheKeyConvTagAll, out, cacheTTLConvTag)
 	return out, nil
 }
 
@@ -2412,7 +2412,7 @@ func (h *CustomerServiceHandler) CreateConvTag(ctx context.Context, req *custome
 		tag.CreateBy = "ADMIN"
 	}
 
-	if err := dal.DB.WithContext(ctx).Create(&tag).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Create(&tag).Error; err != nil {
 		code := int32(500)
 		msg := err.Error()
 		if strings.Contains(msg, "Duplicate") || strings.Contains(msg, "duplicate") {
@@ -2421,7 +2421,7 @@ func (h *CustomerServiceHandler) CreateConvTag(ctx context.Context, req *custome
 		return &customer.CreateConvTagResp{BaseResp: &customer.BaseResp{Code: code, Msg: msg}}, nil
 	}
 
-	_ = dal.CacheDel(ctx, cacheKeyConvTagAll)
+	_ = repository.CacheDel(ctx, cacheKeyConvTagAll)
 	return &customer.CreateConvTagResp{BaseResp: &customer.BaseResp{Code: 0, Msg: "success"}, TagId: tag.TagID}, nil
 }
 
@@ -2453,7 +2453,7 @@ func (h *CustomerServiceHandler) UpdateConvTag(ctx context.Context, req *custome
 		update["tag_color"] = "#1890ff"
 	}
 
-	res := dal.DB.WithContext(ctx).Model(&model.ConvTag{}).Where("tag_id = ?", req.TagId).Updates(update)
+	res := repository.DB.WithContext(ctx).Model(&model.ConvTag{}).Where("tag_id = ?", req.TagId).Updates(update)
 	if res.Error != nil {
 		return &customer.UpdateConvTagResp{BaseResp: &customer.BaseResp{Code: 500, Msg: res.Error.Error()}}, nil
 	}
@@ -2461,7 +2461,7 @@ func (h *CustomerServiceHandler) UpdateConvTag(ctx context.Context, req *custome
 		return &customer.UpdateConvTagResp{BaseResp: &customer.BaseResp{Code: 404, Msg: "tag not found"}}, nil
 	}
 
-	_ = dal.CacheDel(ctx, cacheKeyConvTagAll)
+	_ = repository.CacheDel(ctx, cacheKeyConvTagAll)
 	return &customer.UpdateConvTagResp{BaseResp: &customer.BaseResp{Code: 0, Msg: "success"}}, nil
 }
 
@@ -2471,7 +2471,7 @@ func (h *CustomerServiceHandler) DeleteConvTag(ctx context.Context, req *custome
 		return &customer.DeleteConvTagResp{BaseResp: &customer.BaseResp{Code: 400, Msg: "tag_id is required"}}, nil
 	}
 
-	res := dal.DB.WithContext(ctx).Where("tag_id = ?", req.TagId).Delete(&model.ConvTag{})
+	res := repository.DB.WithContext(ctx).Where("tag_id = ?", req.TagId).Delete(&model.ConvTag{})
 	if res.Error != nil {
 		return &customer.DeleteConvTagResp{BaseResp: &customer.BaseResp{Code: 500, Msg: res.Error.Error()}}, nil
 	}
@@ -2479,7 +2479,7 @@ func (h *CustomerServiceHandler) DeleteConvTag(ctx context.Context, req *custome
 		return &customer.DeleteConvTagResp{BaseResp: &customer.BaseResp{Code: 404, Msg: "tag not found"}}, nil
 	}
 
-	_ = dal.CacheDel(ctx, cacheKeyConvTagAll)
+	_ = repository.CacheDel(ctx, cacheKeyConvTagAll)
 	return &customer.DeleteConvTagResp{BaseResp: &customer.BaseResp{Code: 0, Msg: "success"}}, nil
 }
 
@@ -2503,14 +2503,14 @@ func (h *CustomerServiceHandler) GetConversationStats(ctx context.Context, req *
 
 	// 1. 查询时间范围内的会话基础统计
 	var totalConversations, coreConversations int64
-	baseQuery := dal.DB.WithContext(ctx).Model(&model.Conversation{}).
+	baseQuery := repository.DB.WithContext(ctx).Model(&model.Conversation{}).
 		Where("start_time >= ? AND start_time <= ?", startDate+" 00:00:00", endDate+" 23:59:59")
 
 	if err := baseQuery.Count(&totalConversations).Error; err != nil {
 		return &customer.GetConversationStatsResp{BaseResp: &customer.BaseResp{Code: 500, Msg: "统计总会话失败: " + err.Error()}}, nil
 	}
 
-	if err := dal.DB.WithContext(ctx).Model(&model.Conversation{}).
+	if err := repository.DB.WithContext(ctx).Model(&model.Conversation{}).
 		Where("start_time >= ? AND start_time <= ? AND is_core = 1", startDate+" 00:00:00", endDate+" 23:59:59").
 		Count(&coreConversations).Error; err != nil {
 		return &customer.GetConversationStatsResp{BaseResp: &customer.BaseResp{Code: 500, Msg: "统计核心会话失败: " + err.Error()}}, nil
@@ -2528,7 +2528,7 @@ func (h *CustomerServiceHandler) GetConversationStats(ctx context.Context, req *
 		Count        int64
 	}
 	var catStats []catStat
-	if err := dal.DB.WithContext(ctx).
+	if err := repository.DB.WithContext(ctx).
 		Table("t_conversation c").
 		Select("c.category_id, COALESCE(cat.category_name, '未分类') as category_name, COUNT(*) as count").
 		Joins("LEFT JOIN t_conv_category cat ON c.category_id = cat.category_id").
@@ -2558,7 +2558,7 @@ func (h *CustomerServiceHandler) GetConversationStats(ctx context.Context, req *
 		Tags string
 	}
 	var allTags []convTags
-	if err := dal.DB.WithContext(ctx).
+	if err := repository.DB.WithContext(ctx).
 		Table("t_conversation").
 		Select("tags").
 		Where("start_time >= ? AND start_time <= ? AND tags != '' AND tags IS NOT NULL", startDate+" 00:00:00", endDate+" 23:59:59").
@@ -2619,7 +2619,7 @@ func (h *CustomerServiceHandler) GetConversationStats(ctx context.Context, req *
 		ConvCount   int64
 	}
 	var durationStats []durationRow
-	if err := dal.DB.WithContext(ctx).
+	if err := repository.DB.WithContext(ctx).
 		Table("t_conversation").
 		Select("DATE(start_time) as date, AVG(TIMESTAMPDIFF(MINUTE, start_time, end_time)) as avg_duration, COUNT(*) as conv_count").
 		Where("start_time >= ? AND start_time <= ? AND end_time IS NOT NULL AND end_time > start_time", startDate+" 00:00:00", endDate+" 23:59:59").
@@ -2695,7 +2695,7 @@ func (h *CustomerServiceHandler) GetConversationsForExport(ctx context.Context, 
 	}
 
 	// 构建查询
-	q := dal.DB.WithContext(ctx).Model(&model.Conversation{}).
+	q := repository.DB.WithContext(ctx).Model(&model.Conversation{}).
 		Where("start_time >= ? AND start_time <= ?", startDate+" 00:00:00", endDate+" 23:59:59")
 
 	if req.CsID != "" {
@@ -2717,7 +2717,7 @@ func (h *CustomerServiceHandler) GetConversationsForExport(ctx context.Context, 
 	// 获取客服名称映射
 	csNameMap := make(map[string]string)
 	var csList []model.CustomerService
-	if err := dal.DB.WithContext(ctx).Find(&csList).Error; err == nil {
+	if err := repository.DB.WithContext(ctx).Find(&csList).Error; err == nil {
 		for _, cs := range csList {
 			csNameMap[cs.CsID] = cs.CsName
 		}
@@ -2744,7 +2744,7 @@ func (h *CustomerServiceHandler) GetConversationsForExport(ctx context.Context, 
 			Count  int64
 		}
 		var counts []msgCount
-		dal.DB.WithContext(ctx).Model(&model.ConvMessage{}).
+		repository.DB.WithContext(ctx).Model(&model.ConvMessage{}).
 			Select("conv_id, COUNT(*) as count").
 			Where("conv_id IN ?", convIDs).
 			Group("conv_id").
@@ -2812,7 +2812,7 @@ func (h *CustomerServiceHandler) Login(ctx context.Context, req *customer.LoginR
 
 	// 查询用户
 	var user model.SysUser
-	if err := dal.DB.WithContext(ctx).Where("user_name = ?", userName).First(&user).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Where("user_name = ?", userName).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &customer.LoginResp{BaseResp: &customer.BaseResp{Code: 401, Msg: "用户名或密码错误"}}, nil
 		}
@@ -2832,7 +2832,7 @@ func (h *CustomerServiceHandler) Login(ctx context.Context, req *customer.LoginR
 	// 查询角色名称
 	var role model.SysRole
 	roleName := ""
-	if err := dal.DB.WithContext(ctx).Where("role_code = ?", user.RoleCode).First(&role).Error; err == nil {
+	if err := repository.DB.WithContext(ctx).Where("role_code = ?", user.RoleCode).First(&role).Error; err == nil {
 		roleName = role.RoleName
 	}
 
@@ -2861,7 +2861,7 @@ func (h *CustomerServiceHandler) GetCurrentUser(ctx context.Context, req *custom
 
 	// 查询用户
 	var user model.SysUser
-	if err := dal.DB.WithContext(ctx).Where("id = ?", req.UserId).First(&user).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Where("id = ?", req.UserId).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &customer.GetCurrentUserResp{BaseResp: &customer.BaseResp{Code: 404, Msg: "用户不存在"}}, nil
 		}
@@ -2876,7 +2876,7 @@ func (h *CustomerServiceHandler) GetCurrentUser(ctx context.Context, req *custom
 	// 查询角色名称
 	var role model.SysRole
 	roleName := ""
-	if err := dal.DB.WithContext(ctx).Where("role_code = ?", user.RoleCode).First(&role).Error; err == nil {
+	if err := repository.DB.WithContext(ctx).Where("role_code = ?", user.RoleCode).First(&role).Error; err == nil {
 		roleName = role.RoleName
 	}
 
@@ -2926,7 +2926,7 @@ func (h *CustomerServiceHandler) Register(ctx context.Context, req *customer.Reg
 
 	// 检查用户名是否已存在
 	var existUser model.SysUser
-	if err := dal.DB.WithContext(ctx).Where("user_name = ?", userName).First(&existUser).Error; err == nil {
+	if err := repository.DB.WithContext(ctx).Where("user_name = ?", userName).First(&existUser).Error; err == nil {
 		return &customer.RegisterResp{BaseResp: &customer.BaseResp{Code: 409, Msg: "用户名已存在"}}, nil
 	}
 
@@ -2940,7 +2940,7 @@ func (h *CustomerServiceHandler) Register(ctx context.Context, req *customer.Reg
 	var newUserID int64
 	now := time.Now()
 
-	err = dal.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err = repository.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// 1. 创建客服账号（固定为customer_service角色）
 		newUser := model.SysUser{
 			UserName: userName,
@@ -3037,7 +3037,7 @@ func (h *CustomerServiceHandler) CreateQuickReply(ctx context.Context, req *cust
 		UpdateTime:   now,
 	}
 
-	if err := dal.DB.WithContext(ctx).Create(&reply).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Create(&reply).Error; err != nil {
 		return &customer.CreateQuickReplyResp{
 			BaseResp: &customer.BaseResp{Code: 500, Msg: "创建失败: " + err.Error()},
 		}, nil
@@ -3078,7 +3078,7 @@ func (h *CustomerServiceHandler) UpdateQuickReply(ctx context.Context, req *cust
 
 	// 检查记录是否存在
 	var existing model.QuickReply
-	if err := dal.DB.WithContext(ctx).Where("reply_id = ?", req.ReplyId).First(&existing).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Where("reply_id = ?", req.ReplyId).First(&existing).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &customer.UpdateQuickReplyResp{
 				BaseResp: &customer.BaseResp{Code: 404, Msg: "快捷回复不存在"},
@@ -3103,7 +3103,7 @@ func (h *CustomerServiceHandler) UpdateQuickReply(ctx context.Context, req *cust
 		"update_time":   time.Now(),
 	}
 
-	if err := dal.DB.WithContext(ctx).Model(&model.QuickReply{}).Where("reply_id = ?", req.ReplyId).Updates(updates).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Model(&model.QuickReply{}).Where("reply_id = ?", req.ReplyId).Updates(updates).Error; err != nil {
 		return &customer.UpdateQuickReplyResp{
 			BaseResp: &customer.BaseResp{Code: 500, Msg: "更新失败: " + err.Error()},
 		}, nil
@@ -3127,7 +3127,7 @@ func (h *CustomerServiceHandler) DeleteQuickReply(ctx context.Context, req *cust
 	}
 
 	// 执行删除
-	result := dal.DB.WithContext(ctx).Where("reply_id = ?", req.ReplyId).Delete(&model.QuickReply{})
+	result := repository.DB.WithContext(ctx).Where("reply_id = ?", req.ReplyId).Delete(&model.QuickReply{})
 	if result.Error != nil {
 		return &customer.DeleteQuickReplyResp{
 			BaseResp: &customer.BaseResp{Code: 500, Msg: "删除失败: " + result.Error.Error()},
@@ -3159,7 +3159,7 @@ func (h *CustomerServiceHandler) GetConversationMonitor(ctx context.Context, req
 
 	// 查询客服状态列表
 	var csList []model.CustomerService
-	csQuery := dal.DB.WithContext(ctx).Model(&model.CustomerService{}).Where("status = 1") // 在职客服
+	csQuery := repository.DB.WithContext(ctx).Model(&model.CustomerService{}).Where("status = 1") // 在职客服
 	if req.DeptId != "" {
 		csQuery = csQuery.Where("dept_id = ?", req.DeptId)
 	}
@@ -3177,13 +3177,13 @@ func (h *CustomerServiceHandler) GetConversationMonitor(ctx context.Context, req
 	for _, cs := range csList {
 		// 当前进行中会话数
 		var currentCount int64
-		dal.DB.WithContext(ctx).Model(&model.Conversation{}).
+		repository.DB.WithContext(ctx).Model(&model.Conversation{}).
 			Where("cs_id = ? AND status IN (?, ?)", cs.CsID, model.ConvStatusWaiting, model.ConvStatusOngoing).
 			Count(&currentCount)
 
 		// 今日处理总数
 		var todayCount int64
-		dal.DB.WithContext(ctx).Model(&model.Conversation{}).
+		repository.DB.WithContext(ctx).Model(&model.Conversation{}).
 			Where("cs_id = ? AND DATE(start_time) = ?", cs.CsID, today).
 			Count(&todayCount)
 
@@ -3210,7 +3210,7 @@ func (h *CustomerServiceHandler) GetConversationMonitor(ctx context.Context, req
 
 	// 查询会话列表
 	var convList []model.Conversation
-	convQuery := dal.DB.WithContext(ctx).Model(&model.Conversation{}).
+	convQuery := repository.DB.WithContext(ctx).Model(&model.Conversation{}).
 		Where("status IN (?, ?)", model.ConvStatusWaiting, model.ConvStatusOngoing)
 	if req.StatusFilter == 0 {
 		convQuery = convQuery.Where("status = ?", model.ConvStatusWaiting)
@@ -3221,8 +3221,8 @@ func (h *CustomerServiceHandler) GetConversationMonitor(ctx context.Context, req
 
 	// 统计
 	var waitingCount, ongoingCount int64
-	dal.DB.WithContext(ctx).Model(&model.Conversation{}).Where("status = ?", model.ConvStatusWaiting).Count(&waitingCount)
-	dal.DB.WithContext(ctx).Model(&model.Conversation{}).Where("status = ?", model.ConvStatusOngoing).Count(&ongoingCount)
+	repository.DB.WithContext(ctx).Model(&model.Conversation{}).Where("status = ?", model.ConvStatusWaiting).Count(&waitingCount)
+	repository.DB.WithContext(ctx).Model(&model.Conversation{}).Where("status = ?", model.ConvStatusOngoing).Count(&ongoingCount)
 
 	// 转换会话列表
 	monitorConvList := make([]*customer.MonitorConvItem, 0, len(convList))
@@ -3230,7 +3230,7 @@ func (h *CustomerServiceHandler) GetConversationMonitor(ctx context.Context, req
 	for _, conv := range convList {
 		// 获取最后一条消息
 		var lastMsg model.ConvMessage
-		dal.DB.WithContext(ctx).Model(&model.ConvMessage{}).
+		repository.DB.WithContext(ctx).Model(&model.ConvMessage{}).
 			Where("conv_id = ?", conv.ConvID).
 			Order("send_time desc").First(&lastMsg)
 
@@ -3295,7 +3295,7 @@ func (h *CustomerServiceHandler) ExportConversations(ctx context.Context, req *c
 	}
 
 	// 构建查询条件
-	query := dal.DB.WithContext(ctx).Model(&model.Conversation{})
+	query := repository.DB.WithContext(ctx).Model(&model.Conversation{})
 
 	if req.CsId != "" {
 		query = query.Where("cs_id = ?", req.CsId)
@@ -3372,7 +3372,7 @@ func (h *CustomerServiceHandler) MsgAutoClassify(ctx context.Context, req *custo
 
 	// 查询所有分类及关键词
 	var categories []model.MsgCategory
-	if err := dal.DB.WithContext(ctx).Model(&model.MsgCategory{}).Order("sort_no asc").Find(&categories).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Model(&model.MsgCategory{}).Order("sort_no asc").Find(&categories).Error; err != nil {
 		return &customer.MsgAutoClassifyResp{
 			BaseResp: &customer.BaseResp{Code: 500, Msg: "查询分类失败: " + err.Error()},
 		}, nil
@@ -3389,9 +3389,9 @@ func (h *CustomerServiceHandler) MsgAutoClassify(ctx context.Context, req *custo
 	}
 
 	// 创建NLP分类器
-	classifier := nlp.NewClassifier()
+	classifier := ai.NewClassifier()
 	for _, cat := range categories {
-		keywords := nlp.ParseKeywordsJSON(cat.Keywords)
+		keywords := ai.ParseKeywordsJSON(cat.Keywords)
 		classifier.AddCategory(cat.CategoryID, cat.CategoryName, keywords)
 	}
 
@@ -3401,7 +3401,7 @@ func (h *CustomerServiceHandler) MsgAutoClassify(ctx context.Context, req *custo
 
 	// 更新会话的分类（置信度足够高时自动更新）
 	if !result.NeedManual {
-		dal.DB.WithContext(ctx).Model(&model.Conversation{}).
+		repository.DB.WithContext(ctx).Model(&model.Conversation{}).
 			Where("conv_id = ?", req.ConvId).
 			Updates(map[string]interface{}{
 				"category_id":      result.CategoryID,
@@ -3437,7 +3437,7 @@ func (h *CustomerServiceHandler) AdjustMsgClassify(ctx context.Context, req *cus
 
 	// 验证新分类是否存在
 	var newCat model.MsgCategory
-	if err := dal.DB.WithContext(ctx).Where("category_id = ?", req.NewCategoryId_).First(&newCat).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Where("category_id = ?", req.NewCategoryId_).First(&newCat).Error; err != nil {
 		return &customer.AdjustMsgClassifyResp{
 			BaseResp: &customer.BaseResp{Code: 404, Msg: "目标分类不存在"},
 		}, nil
@@ -3452,7 +3452,7 @@ func (h *CustomerServiceHandler) AdjustMsgClassify(ctx context.Context, req *cus
 		AdjustReason:       req.AdjustReason,
 		CreateTime:         time.Now(),
 	}
-	if err := dal.DB.WithContext(ctx).Create(&adjustLog).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Create(&adjustLog).Error; err != nil {
 		return &customer.AdjustMsgClassifyResp{
 			BaseResp: &customer.BaseResp{Code: 500, Msg: "记录调整日志失败: " + err.Error()},
 		}, nil
@@ -3464,7 +3464,7 @@ func (h *CustomerServiceHandler) AdjustMsgClassify(ctx context.Context, req *cus
 		"is_manual_adjust": 1,
 		"update_time":      time.Now(),
 	}
-	if err := dal.DB.WithContext(ctx).Model(&model.Conversation{}).Where("conv_id = ?", req.ConvId).Updates(updates).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Model(&model.Conversation{}).Where("conv_id = ?", req.ConvId).Updates(updates).Error; err != nil {
 		return &customer.AdjustMsgClassifyResp{
 			BaseResp: &customer.BaseResp{Code: 500, Msg: "更新会话分类失败: " + err.Error()},
 		}, nil
@@ -3504,7 +3504,7 @@ func (h *CustomerServiceHandler) GetClassifyStats(ctx context.Context, req *cust
 
 	// 查询所有分类
 	var categories []model.MsgCategory
-	dal.DB.WithContext(ctx).Model(&model.MsgCategory{}).Order("sort_no asc").Find(&categories)
+	repository.DB.WithContext(ctx).Model(&model.MsgCategory{}).Order("sort_no asc").Find(&categories)
 
 	categoryMap := make(map[int64]string)
 	for _, cat := range categories {
@@ -3517,7 +3517,7 @@ func (h *CustomerServiceHandler) GetClassifyStats(ctx context.Context, req *cust
 		Count      int64 `gorm:"column:count"`
 	}
 	var catCounts []catCount
-	dal.DB.WithContext(ctx).Model(&model.Conversation{}).
+	repository.DB.WithContext(ctx).Model(&model.Conversation{}).
 		Select("category_id, COUNT(*) as count").
 		Where("DATE(start_time) BETWEEN ? AND ?", startDate.Format("2006-01-02"), endDate.Format("2006-01-02")).
 		Where("category_id > 0").
@@ -3545,7 +3545,7 @@ func (h *CustomerServiceHandler) GetClassifyStats(ctx context.Context, req *cust
 
 	// 统计人工调整数
 	var manualAdjusted int64
-	dal.DB.WithContext(ctx).Model(&model.ClassifyAdjustLog{}).
+	repository.DB.WithContext(ctx).Model(&model.ClassifyAdjustLog{}).
 		Where("DATE(create_time) BETWEEN ? AND ?", startDate.Format("2006-01-02"), endDate.Format("2006-01-02")).
 		Count(&manualAdjusted)
 
@@ -3566,7 +3566,7 @@ func (h *CustomerServiceHandler) GetClassifyStats(ctx context.Context, req *cust
 		Count      int64  `gorm:"column:count"`
 	}
 	var dailyStats []dailyStat
-	dal.DB.WithContext(ctx).Model(&model.Conversation{}).
+	repository.DB.WithContext(ctx).Model(&model.Conversation{}).
 		Select("DATE(start_time) as date, category_id, COUNT(*) as count").
 		Where("DATE(start_time) BETWEEN ? AND ?", startDate.Format("2006-01-02"), endDate.Format("2006-01-02")).
 		Where("category_id > 0").
@@ -3614,7 +3614,7 @@ func (h *CustomerServiceHandler) CreateMsgCategory(ctx context.Context, req *cus
 		UpdateTime:   now,
 	}
 
-	if err := dal.DB.WithContext(ctx).Create(&cat).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Create(&cat).Error; err != nil {
 		if strings.Contains(err.Error(), "Duplicate") {
 			return &customer.CreateMsgCategoryResp{
 				BaseResp: &customer.BaseResp{Code: 400, Msg: "分类名称已存在"},
@@ -3634,7 +3634,7 @@ func (h *CustomerServiceHandler) CreateMsgCategory(ctx context.Context, req *cus
 // ListMsgCategory 查询消息分类维度列表
 func (h *CustomerServiceHandler) ListMsgCategory(ctx context.Context, req *customer.ListMsgCategoryReq) (*customer.ListMsgCategoryResp, error) {
 	var categories []model.MsgCategory
-	if err := dal.DB.WithContext(ctx).Model(&model.MsgCategory{}).Order("sort_no asc").Find(&categories).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Model(&model.MsgCategory{}).Order("sort_no asc").Find(&categories).Error; err != nil {
 		return &customer.ListMsgCategoryResp{
 			BaseResp: &customer.BaseResp{Code: 500, Msg: "查询失败: " + err.Error()},
 		}, nil
@@ -3676,7 +3676,7 @@ func (h *CustomerServiceHandler) UpdateMsgCategory(ctx context.Context, req *cus
 	}
 	updates["sort_no"] = req.SortNo
 
-	res := dal.DB.WithContext(ctx).Model(&model.MsgCategory{}).Where("category_id = ?", req.CategoryId).Updates(updates)
+	res := repository.DB.WithContext(ctx).Model(&model.MsgCategory{}).Where("category_id = ?", req.CategoryId).Updates(updates)
 	if res.Error != nil {
 		return &customer.UpdateMsgCategoryResp{
 			BaseResp: &customer.BaseResp{Code: 500, Msg: "更新失败: " + res.Error.Error()},
@@ -3701,7 +3701,7 @@ func (h *CustomerServiceHandler) DeleteMsgCategory(ctx context.Context, req *cus
 		}, nil
 	}
 
-	res := dal.DB.WithContext(ctx).Where("category_id = ?", req.CategoryId).Delete(&model.MsgCategory{})
+	res := repository.DB.WithContext(ctx).Where("category_id = ?", req.CategoryId).Delete(&model.MsgCategory{})
 	if res.Error != nil {
 		return &customer.DeleteMsgCategoryResp{
 			BaseResp: &customer.BaseResp{Code: 500, Msg: "删除失败: " + res.Error.Error()},
@@ -3774,7 +3774,7 @@ func (h *CustomerServiceHandler) DesensitizeMessage(ctx context.Context, req *cu
 		}, nil
 	}
 
-	desensitizer := nlp.NewDesensitizer()
+	desensitizer := ai.NewDesensitizer()
 	desensitized := desensitizer.Desensitize(req.MsgContent)
 	detected := desensitizer.DetectSensitiveInfo(req.MsgContent)
 
@@ -3817,7 +3817,7 @@ func (h *CustomerServiceHandler) ArchiveConversations(ctx context.Context, req *
 		StartTime:  time.Now(),
 		OperatorID: req.OperatorId,
 	}
-	if err := dal.DB.WithContext(ctx).Create(&task).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Create(&task).Error; err != nil {
 		return &customer.ArchiveConversationsResp{
 			BaseResp: &customer.BaseResp{Code: 500, Msg: "创建归档任务失败: " + err.Error()},
 		}, nil
@@ -3830,7 +3830,7 @@ func (h *CustomerServiceHandler) ArchiveConversations(ctx context.Context, req *
 
 		// 查询需要归档的会话
 		var convs []model.Conversation
-		dal.DB.WithContext(archiveCtx).
+		repository.DB.WithContext(archiveCtx).
 			Where("status IN (?, ?) AND end_time < ?", model.ConvStatusEnded, model.ConvStatusAbandoned, endDate).
 			Find(&convs)
 
@@ -3840,7 +3840,7 @@ func (h *CustomerServiceHandler) ArchiveConversations(ctx context.Context, req *
 
 			// 查询消息数量
 			var msgCount int64
-			dal.DB.WithContext(archiveCtx).Model(&model.ConvMessage{}).
+			repository.DB.WithContext(archiveCtx).Model(&model.ConvMessage{}).
 				Where("conv_id = ?", conv.ConvID).Count(&msgCount)
 
 			// 创建归档记录
@@ -3855,13 +3855,13 @@ func (h *CustomerServiceHandler) ArchiveConversations(ctx context.Context, req *
 				RetentionDays: retentionDays,
 			}
 
-			if err := dal.DB.WithContext(archiveCtx).Create(&archived).Error; err == nil {
+			if err := repository.DB.WithContext(archiveCtx).Create(&archived).Error; err == nil {
 				archivedCount++
 			}
 		}
 
 		// 更新任务状态
-		dal.DB.WithContext(archiveCtx).Model(&model.ArchiveTask{}).
+		repository.DB.WithContext(archiveCtx).Model(&model.ArchiveTask{}).
 			Where("task_id = ?", task.TaskID).
 			Updates(map[string]interface{}{
 				"archived_count": archivedCount,
@@ -3886,7 +3886,7 @@ func (h *CustomerServiceHandler) GetArchiveTask(ctx context.Context, req *custom
 	}
 
 	var task model.ArchiveTask
-	if err := dal.DB.WithContext(ctx).Where("task_id = ?", req.TaskId).First(&task).Error; err != nil {
+	if err := repository.DB.WithContext(ctx).Where("task_id = ?", req.TaskId).First(&task).Error; err != nil {
 		return &customer.GetArchiveTaskResp{
 			BaseResp: &customer.BaseResp{Code: 404, Msg: "任务不存在"},
 		}, nil
@@ -3917,7 +3917,7 @@ func (h *CustomerServiceHandler) QueryArchivedConversation(ctx context.Context, 
 		req.PageSize = 20
 	}
 
-	query := dal.DB.WithContext(ctx).Model(&model.ArchivedConversation{})
+	query := repository.DB.WithContext(ctx).Model(&model.ArchivedConversation{})
 
 	if req.UserId != "" {
 		query = query.Where("user_id = ?", req.UserId)
@@ -3956,4 +3956,142 @@ func (h *CustomerServiceHandler) QueryArchivedConversation(ctx context.Context, 
 		Items:    result,
 		Total:    total,
 	}, nil
+}
+
+// ============ 链式调班相关方法 ============
+
+// ApplyChainSwap 申请链式调班
+func (h *CustomerServiceHandler) ApplyChainSwap(ctx context.Context, req *customer.ApplyChainSwapReq) (*customer.ApplyChainSwapResp, error) {
+	// TODO: 需要添加 model.ChainSwap 和 model.ChainSwapItem 结构定义后实现
+	return &customer.ApplyChainSwapResp{BaseResp: &customer.BaseResp{Code: 501, Msg: "not implemented"}}, nil
+}
+
+// ApproveChainSwap 审批链式调班
+func (h *CustomerServiceHandler) ApproveChainSwap(ctx context.Context, req *customer.ApproveChainSwapReq) (*customer.ApproveChainSwapResp, error) {
+	// TODO: 需要添加 model.ChainSwap 结构定义后实现
+	return &customer.ApproveChainSwapResp{BaseResp: &customer.BaseResp{Code: 501, Msg: "not implemented"}}, nil
+}
+
+// ListChainSwap 查询链式调班列表
+func (h *CustomerServiceHandler) ListChainSwap(ctx context.Context, req *customer.ListChainSwapReq) (*customer.ListChainSwapResp, error) {
+	// TODO: 需要添加 model.ChainSwap 结构定义后实现
+	return &customer.ListChainSwapResp{BaseResp: &customer.BaseResp{Code: 501, Msg: "not implemented"}}, nil
+}
+
+// GetChainSwap 获取链式调班详情
+func (h *CustomerServiceHandler) GetChainSwap(ctx context.Context, req *customer.GetChainSwapReq) (*customer.GetChainSwapResp, error) {
+	// TODO: 需要添加 model.ChainSwap 结构定义后实现
+	return &customer.GetChainSwapResp{BaseResp: &customer.BaseResp{Code: 501, Msg: "not implemented"}}, nil
+}
+
+// Heartbeat 客服心跳接口
+func (h *CustomerServiceHandler) Heartbeat(ctx context.Context, req *customer.HeartbeatReq) (*customer.HeartbeatResp, error) {
+	if req == nil || req.CsId == "" {
+		return &customer.HeartbeatResp{BaseResp: &customer.BaseResp{Code: 400, Msg: "cs_id is required"}}, nil
+	}
+
+	now := time.Now()
+	update := map[string]interface{}{
+		"is_online":      1,
+		"last_heartbeat": now,
+	}
+	if err := repository.DB.Model(&model.CustomerService{}).Where("cs_id = ?", req.CsId).Updates(update).Error; err != nil {
+		return &customer.HeartbeatResp{BaseResp: &customer.BaseResp{Code: 500, Msg: err.Error()}}, nil
+	}
+	return &customer.HeartbeatResp{BaseResp: &customer.BaseResp{Code: 0, Msg: "success"}}, nil
+}
+
+// ListOnlineCustomers 获取在线客服列表
+func (h *CustomerServiceHandler) ListOnlineCustomers(ctx context.Context, req *customer.ListOnlineCustomersReq) (*customer.ListOnlineCustomersResp, error) {
+	query := repository.DB.WithContext(ctx).Model(&model.CustomerService{}).Where("is_online = 1")
+
+	if req.DeptId != "" {
+		query = query.Where("dept_id = ?", req.DeptId)
+	}
+
+	var csList []model.CustomerService
+	if err := query.Find(&csList).Error; err != nil {
+		return &customer.ListOnlineCustomersResp{BaseResp: &customer.BaseResp{Code: 500, Msg: err.Error()}}, nil
+	}
+
+	var result []*customer.CustomerAgent
+	for _, cs := range csList {
+		result = append(result, &customer.CustomerAgent{
+			CsId:          cs.CsID,
+			CsName:        cs.CsName,
+			DeptId:        cs.DeptID,
+			TeamId:        cs.TeamID,
+			CurrentStatus: cs.CurrentStatus,
+			IsOnline:      cs.IsOnline,
+		})
+	}
+
+	return &customer.ListOnlineCustomersResp{
+		BaseResp:  &customer.BaseResp{Code: 0, Msg: "success"},
+		Customers: result,
+		Total:     int64(len(result)),
+	}, nil
+}
+
+// GetSwapCandidates 获取可调班候选人
+func (h *CustomerServiceHandler) GetSwapCandidates(ctx context.Context, req *customer.GetSwapCandidatesReq) (*customer.GetSwapCandidatesResp, error) {
+	// TODO: 需要确认请求字段名后实现
+	return &customer.GetSwapCandidatesResp{BaseResp: &customer.BaseResp{Code: 501, Msg: "not implemented"}}, nil
+}
+
+// CheckSwapConflict 检查调班冲突
+func (h *CustomerServiceHandler) CheckSwapConflict(ctx context.Context, req *customer.CheckSwapConflictReq) (*customer.CheckSwapConflictResp, error) {
+	// TODO: 需要确认请求字段名后实现
+	return &customer.CheckSwapConflictResp{BaseResp: &customer.BaseResp{Code: 501, Msg: "not implemented"}}, nil
+}
+
+// GetLeaveAuditLog 获取请假审批日志
+func (h *CustomerServiceHandler) GetLeaveAuditLog(ctx context.Context, req *customer.GetLeaveAuditLogReq) (*customer.GetLeaveAuditLogResp, error) {
+	if req == nil || req.ApplyId <= 0 {
+		return &customer.GetLeaveAuditLogResp{BaseResp: &customer.BaseResp{Code: 400, Msg: "apply_id is required"}}, nil
+	}
+
+	var logs []model.LeaveAuditLog
+	if err := repository.DB.Where("apply_id = ?", req.ApplyId).Order("create_time asc").Find(&logs).Error; err != nil {
+		return &customer.GetLeaveAuditLogResp{BaseResp: &customer.BaseResp{Code: 500, Msg: err.Error()}}, nil
+	}
+
+	var result []*customer.AuditLogItem
+	for _, log := range logs {
+		result = append(result, &customer.AuditLogItem{
+			LogId:        log.LogID,
+			ApplyId:      log.ApplyID,
+			Action:       log.Action,
+			OperatorId:   log.OperatorID,
+			OperatorName: log.OperatorName,
+			OperatorRole: log.OperatorRole,
+			Remark:       log.Remark,
+			CreateTime:   log.CreateTime.Format("2006-01-02 15:04:05"),
+		})
+	}
+
+	return &customer.GetLeaveAuditLogResp{
+		BaseResp: &customer.BaseResp{Code: 0, Msg: "success"},
+		Logs:     result,
+	}, nil
+}
+
+// ============ 认证相关方法 ============
+
+// Logout 用户登出
+func (h *CustomerServiceHandler) Logout(ctx context.Context, req *customer.LogoutReq) (*customer.LogoutResp, error) {
+	// 清除用户会话状态
+	if req == nil || req.CsId == "" {
+		return &customer.LogoutResp{BaseResp: &customer.BaseResp{Code: 400, Msg: "cs_id is required"}}, nil
+	}
+
+	// 将客服状态设为离线
+	update := map[string]interface{}{
+		"is_online":      0,
+		"current_status": 2, // 离线状态
+	}
+	if err := repository.DB.Model(&model.CustomerService{}).Where("cs_id = ?", req.CsId).Updates(update).Error; err != nil {
+		return &customer.LogoutResp{BaseResp: &customer.BaseResp{Code: 500, Msg: err.Error()}}, nil
+	}
+	return &customer.LogoutResp{BaseResp: &customer.BaseResp{Code: 0, Msg: "success"}}, nil
 }

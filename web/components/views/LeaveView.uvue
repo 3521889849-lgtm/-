@@ -1,7 +1,8 @@
 <template>
 	<view class="leave-view">
-		<text class="section-title">提交申请</text>
-		<view class="card">
+		<view v-if="!isManageRole">
+			<text class="section-title">提交申请</text>
+			<view class="card">
 			<view class="segmented-control">
 				<view class="segment-item" :class="{ active: apply.apply_type === 0 }" @click="setApplyType(0)">
 					<text class="segment-text" :class="{ 'active-text': apply.apply_type === 0 }">请假</text>
@@ -42,6 +43,7 @@
 
 				<button class="apple-btn" @click="submitApply">提交申请</button>
 				<text v-if="lastApplyId > 0" class="hint-text text-center">最新申请ID：{{ lastApplyId }}</text>
+			</view>
 			</view>
 		</view>
 
@@ -100,11 +102,19 @@
 				approve: {
 					apply_id_str: '',
 					approver_id: ''
-				}
+				},
+				roleCode: 0
 			}
 		},
 		mounted() {
 			this.apply.target_date = todayYMD()
+			this.checkRole()
+		},
+		computed: {
+			isManageRole() {
+				// 1=经理, 2=管理员
+				return this.roleCode === 1 || this.roleCode === 2
+			}
 		},
 		methods: {
 			setApplyType(type) {
@@ -210,6 +220,22 @@
 						content: e.errMsg || '未知错误',
 						showCancel: false
 					})
+				}
+			},
+			checkRole() {
+				try {
+					const roleCode = uni.getStorageSync('roleCode')
+					if (roleCode !== undefined && roleCode !== null && roleCode !== '') {
+						this.roleCode = parseInt(roleCode)
+					}
+					api.getCurrentUser().then(res => {
+						if (res && res.base_resp && res.base_resp.code === 0 && res.user) {
+							this.roleCode = res.user.role
+							uni.setStorageSync('roleCode', this.roleCode)
+						}
+					})
+				} catch (e) {
+					console.error(e)
 				}
 			}
 		}

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"example_shop/service/customer/config"
-	"example_shop/service/customer/dal"
+	"example_shop/service/customer/repository"
 	"example_shop/service/customer/model"
 
 	"gorm.io/gorm"
@@ -22,15 +22,15 @@ func main() {
 		log.Fatalf("Failed to init config: %v", err)
 	}
 
-	if err := dal.InitDB(); err != nil {
+	if err := repository.InitDB(); err != nil {
 		log.Fatalf("Failed to init database: %v", err)
 	}
 
-	if err := dal.MigrateTables(); err != nil {
+	if err := repository.MigrateTables(); err != nil {
 		log.Fatalf("Failed to migrate tables: %v", err)
 	}
 
-	if err := seedHistoryConversations(dal.DB, 10); err != nil {
+	if err := seedHistoryConversations(repository.DB, 10); err != nil {
 		log.Fatalf("Failed to seed history conversations: %v", err)
 	}
 
@@ -94,7 +94,7 @@ func seedHistoryConversations(db *gorm.DB, n int) error {
 					ConvID:       convID,
 					SenderType:   0,
 					SenderID:     userID,
-					MsgContent:   fmt.Sprintf("你好，我想查询订单状态（测试会话 %d）。", i),
+					MsgContent:   fmt.Sprintf("你好，我想查询订单状态（测试会话 %d）�?, i),
 					IsQuickReply: 0,
 					SendTime:     startTime.Add(1 * time.Minute),
 				},
@@ -102,7 +102,7 @@ func seedHistoryConversations(db *gorm.DB, n int) error {
 					ConvID:       convID,
 					SenderType:   2,
 					SenderID:     "SYSTEM",
-					MsgContent:   "【系统】会话已结束，归档入历史记录。",
+					MsgContent:   "【系统】会话已结束，归档入历史记录�?,
 					IsQuickReply: 0,
 					SendTime:     startTime.Add(2 * time.Minute),
 				},
@@ -110,7 +110,7 @@ func seedHistoryConversations(db *gorm.DB, n int) error {
 					ConvID:       convID,
 					SenderType:   1,
 					SenderID:     csID,
-					MsgContent:   "您好，我已为您核实订单状态，请稍等。",
+					MsgContent:   "您好，我已为您核实订单状态，请稍等�?,
 					IsQuickReply: 0,
 					SendTime:     startTime.Add(3 * time.Minute),
 				},
@@ -118,7 +118,7 @@ func seedHistoryConversations(db *gorm.DB, n int) error {
 					ConvID:       convID,
 					SenderType:   0,
 					SenderID:     userID,
-					MsgContent:   "好的，谢谢。",
+					MsgContent:   "好的，谢谢�?,
 					IsQuickReply: 0,
 					SendTime:     startTime.Add(4 * time.Minute),
 				},

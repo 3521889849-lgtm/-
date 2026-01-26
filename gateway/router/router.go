@@ -65,6 +65,7 @@ func SetupRoutes(customerHandler *handler.CustomerHandler, hub *ws.Hub) *http.Se
 	// ============ 公共接口（无需登录） ============
 	mux.HandleFunc("/api/v1/user/login", customerHandler.Login)       // 用户登录
 	mux.HandleFunc("/api/v1/user/register", customerHandler.Register) // 用户注册（仅客服账号）
+	mux.HandleFunc("/api/v1/user/logout", customerHandler.Logout)     // 用户退出登录
 
 	// ============ 需要登录的接口 ============
 	mux.HandleFunc("/api/v1/user/current", customerHandler.GetCurrentUser) // 获取当前用户信息
@@ -87,10 +88,21 @@ func SetupRoutes(customerHandler *handler.CustomerHandler, hub *ws.Hub) *http.Se
 	mux.HandleFunc("/api/schedule/export", customerHandler.ExportScheduleExcel)     // 导出排班Excel
 
 	// ============ 请假/调班管理接口 ============
-	mux.HandleFunc("/api/leave/apply", customerHandler.ApplyLeaveTransfer)     // 提交请假/调班申请
-	mux.HandleFunc("/api/leave/approve", customerHandler.ApproveLeaveTransfer) // 审批申请
-	mux.HandleFunc("/api/leave/get", customerHandler.GetLeaveTransfer)         // 获取申请详情
-	mux.HandleFunc("/api/leave/list", customerHandler.ListLeaveTransfer)       // 查询申请列表
+	mux.HandleFunc("/api/leave/apply", customerHandler.ApplyLeaveTransfer)            // 提交请假/调班申请
+	mux.HandleFunc("/api/leave/approve", customerHandler.ApproveLeaveTransfer)        // 审批申请
+	mux.HandleFunc("/api/leave/get", customerHandler.GetLeaveTransfer)                // 获取申请详情
+	mux.HandleFunc("/api/leave/list", customerHandler.ListLeaveTransfer)              // 查询申请列表
+	mux.HandleFunc("/api/leave/audit-log", customerHandler.GetLeaveAuditLog)          // 获取请假审计日志
+	mux.HandleFunc("/api/leave/swap-candidates", customerHandler.GetSwapCandidates)   // 获取调班候选人
+	mux.HandleFunc("/api/leave/check-conflict", customerHandler.CheckSwapConflict)    // 检测调班冲突
+	mux.HandleFunc("/api/leave/chain-swap/apply", customerHandler.ApplyChainSwap)     // 提交链式调班申请
+	mux.HandleFunc("/api/leave/chain-swap/approve", customerHandler.ApproveChainSwap) // 审批链式调班申请
+	mux.HandleFunc("/api/leave/chain-swap/list", customerHandler.ListChainSwap)       // 查询链式调班列表
+	mux.HandleFunc("/api/leave/chain-swap/get", customerHandler.GetChainSwap)         // 获取链式调班详情
+
+	// ============ 心跳与在线状态接口 ============
+	mux.HandleFunc("/api/customer/heartbeat", customerHandler.Heartbeat)             // 客服心跳上报
+	mux.HandleFunc("/api/customer/online-list", customerHandler.ListOnlineCustomers) // 获取在线客服列表
 
 	// ============ 会话管理接口 ============
 	mux.HandleFunc("/api/conversation/create", customerHandler.CreateConversation)            // 创建会话

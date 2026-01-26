@@ -53,6 +53,9 @@ type CustomerAgent struct {
 	SkillTags     string `thrift:"skill_tags,5" frugal:"5,default,string" json:"skill_tags"`
 	Status        int8   `thrift:"status,6" frugal:"6,default,i8" json:"status"`
 	CurrentStatus int8   `thrift:"current_status,7" frugal:"7,default,i8" json:"current_status"`
+	IsOnline      int8   `thrift:"is_online,8" frugal:"8,default,i8" json:"is_online"`
+	LastHeartbeat string `thrift:"last_heartbeat,9" frugal:"9,default,string" json:"last_heartbeat"`
+	Role          int8   `thrift:"role,10" frugal:"10,default,i8" json:"role"`
 }
 
 func NewCustomerAgent() *CustomerAgent {
@@ -89,6 +92,18 @@ func (p *CustomerAgent) GetStatus() (v int8) {
 func (p *CustomerAgent) GetCurrentStatus() (v int8) {
 	return p.CurrentStatus
 }
+
+func (p *CustomerAgent) GetIsOnline() (v int8) {
+	return p.IsOnline
+}
+
+func (p *CustomerAgent) GetLastHeartbeat() (v string) {
+	return p.LastHeartbeat
+}
+
+func (p *CustomerAgent) GetRole() (v int8) {
+	return p.Role
+}
 func (p *CustomerAgent) SetCsId(val string) {
 	p.CsId = val
 }
@@ -110,6 +125,15 @@ func (p *CustomerAgent) SetStatus(val int8) {
 func (p *CustomerAgent) SetCurrentStatus(val int8) {
 	p.CurrentStatus = val
 }
+func (p *CustomerAgent) SetIsOnline(val int8) {
+	p.IsOnline = val
+}
+func (p *CustomerAgent) SetLastHeartbeat(val string) {
+	p.LastHeartbeat = val
+}
+func (p *CustomerAgent) SetRole(val int8) {
+	p.Role = val
+}
 
 func (p *CustomerAgent) String() string {
 	if p == nil {
@@ -119,13 +143,16 @@ func (p *CustomerAgent) String() string {
 }
 
 var fieldIDToName_CustomerAgent = map[int16]string{
-	1: "cs_id",
-	2: "cs_name",
-	3: "dept_id",
-	4: "team_id",
-	5: "skill_tags",
-	6: "status",
-	7: "current_status",
+	1:  "cs_id",
+	2:  "cs_name",
+	3:  "dept_id",
+	4:  "team_id",
+	5:  "skill_tags",
+	6:  "status",
+	7:  "current_status",
+	8:  "is_online",
+	9:  "last_heartbeat",
+	10: "role",
 }
 
 type GetCustomerServiceReq struct {
@@ -885,6 +912,7 @@ type ListScheduleGridReq struct {
 	EndDate   string `thrift:"end_date,2" frugal:"2,default,string" json:"end_date"`
 	DeptId    string `thrift:"dept_id,3" frugal:"3,default,string" json:"dept_id"`
 	TeamId    string `thrift:"team_id,4" frugal:"4,default,string" json:"team_id"`
+	CsId      string `thrift:"cs_id,5" frugal:"5,default,string" json:"cs_id"`
 }
 
 func NewListScheduleGridReq() *ListScheduleGridReq {
@@ -909,6 +937,10 @@ func (p *ListScheduleGridReq) GetDeptId() (v string) {
 func (p *ListScheduleGridReq) GetTeamId() (v string) {
 	return p.TeamId
 }
+
+func (p *ListScheduleGridReq) GetCsId() (v string) {
+	return p.CsId
+}
 func (p *ListScheduleGridReq) SetStartDate(val string) {
 	p.StartDate = val
 }
@@ -920,6 +952,9 @@ func (p *ListScheduleGridReq) SetDeptId(val string) {
 }
 func (p *ListScheduleGridReq) SetTeamId(val string) {
 	p.TeamId = val
+}
+func (p *ListScheduleGridReq) SetCsId(val string) {
+	p.CsId = val
 }
 
 func (p *ListScheduleGridReq) String() string {
@@ -934,6 +969,7 @@ var fieldIDToName_ListScheduleGridReq = map[int16]string{
 	2: "end_date",
 	3: "dept_id",
 	4: "team_id",
+	5: "cs_id",
 }
 
 type ListScheduleGridResp struct {
@@ -1674,12 +1710,18 @@ var fieldIDToName_TransferConversationResp = map[int16]string{
 }
 
 type ApplyLeaveTransferReq struct {
-	CsId       string `thrift:"cs_id,1" frugal:"1,default,string" json:"cs_id"`
-	ApplyType  int8   `thrift:"apply_type,2" frugal:"2,default,i8" json:"apply_type"`
-	TargetDate string `thrift:"target_date,3" frugal:"3,default,string" json:"target_date"`
-	ShiftId    int64  `thrift:"shift_id,4" frugal:"4,default,i64" json:"shift_id"`
-	TargetCsId string `thrift:"target_cs_id,5" frugal:"5,default,string" json:"target_cs_id"`
-	Reason     string `thrift:"reason,6" frugal:"6,default,string" json:"reason"`
+	CsId        string `thrift:"cs_id,1" frugal:"1,default,string" json:"cs_id"`
+	ApplyType   int8   `thrift:"apply_type,2" frugal:"2,default,i8" json:"apply_type"`
+	TargetDate  string `thrift:"target_date,3" frugal:"3,default,string" json:"target_date"`
+	ShiftId     int64  `thrift:"shift_id,4" frugal:"4,default,i64" json:"shift_id"`
+	TargetCsId  string `thrift:"target_cs_id,5" frugal:"5,default,string" json:"target_cs_id"`
+	Reason      string `thrift:"reason,6" frugal:"6,default,string" json:"reason"`
+	StartDate   string `thrift:"start_date,7" frugal:"7,default,string" json:"start_date"`
+	EndDate     string `thrift:"end_date,8" frugal:"8,default,string" json:"end_date"`
+	StartPeriod int8   `thrift:"start_period,9" frugal:"9,default,i8" json:"start_period"`
+	EndPeriod   int8   `thrift:"end_period,10" frugal:"10,default,i8" json:"end_period"`
+	LeaveType   int8   `thrift:"leave_type,11" frugal:"11,default,i8" json:"leave_type"`
+	Attachments string `thrift:"attachments,12" frugal:"12,default,string" json:"attachments"`
 }
 
 func NewApplyLeaveTransferReq() *ApplyLeaveTransferReq {
@@ -1712,6 +1754,30 @@ func (p *ApplyLeaveTransferReq) GetTargetCsId() (v string) {
 func (p *ApplyLeaveTransferReq) GetReason() (v string) {
 	return p.Reason
 }
+
+func (p *ApplyLeaveTransferReq) GetStartDate() (v string) {
+	return p.StartDate
+}
+
+func (p *ApplyLeaveTransferReq) GetEndDate() (v string) {
+	return p.EndDate
+}
+
+func (p *ApplyLeaveTransferReq) GetStartPeriod() (v int8) {
+	return p.StartPeriod
+}
+
+func (p *ApplyLeaveTransferReq) GetEndPeriod() (v int8) {
+	return p.EndPeriod
+}
+
+func (p *ApplyLeaveTransferReq) GetLeaveType() (v int8) {
+	return p.LeaveType
+}
+
+func (p *ApplyLeaveTransferReq) GetAttachments() (v string) {
+	return p.Attachments
+}
 func (p *ApplyLeaveTransferReq) SetCsId(val string) {
 	p.CsId = val
 }
@@ -1730,6 +1796,24 @@ func (p *ApplyLeaveTransferReq) SetTargetCsId(val string) {
 func (p *ApplyLeaveTransferReq) SetReason(val string) {
 	p.Reason = val
 }
+func (p *ApplyLeaveTransferReq) SetStartDate(val string) {
+	p.StartDate = val
+}
+func (p *ApplyLeaveTransferReq) SetEndDate(val string) {
+	p.EndDate = val
+}
+func (p *ApplyLeaveTransferReq) SetStartPeriod(val int8) {
+	p.StartPeriod = val
+}
+func (p *ApplyLeaveTransferReq) SetEndPeriod(val int8) {
+	p.EndPeriod = val
+}
+func (p *ApplyLeaveTransferReq) SetLeaveType(val int8) {
+	p.LeaveType = val
+}
+func (p *ApplyLeaveTransferReq) SetAttachments(val string) {
+	p.Attachments = val
+}
 
 func (p *ApplyLeaveTransferReq) String() string {
 	if p == nil {
@@ -1739,12 +1823,18 @@ func (p *ApplyLeaveTransferReq) String() string {
 }
 
 var fieldIDToName_ApplyLeaveTransferReq = map[int16]string{
-	1: "cs_id",
-	2: "apply_type",
-	3: "target_date",
-	4: "shift_id",
-	5: "target_cs_id",
-	6: "reason",
+	1:  "cs_id",
+	2:  "apply_type",
+	3:  "target_date",
+	4:  "shift_id",
+	5:  "target_cs_id",
+	6:  "reason",
+	7:  "start_date",
+	8:  "end_date",
+	9:  "start_period",
+	10: "end_period",
+	11: "leave_type",
+	12: "attachments",
 }
 
 type ApplyLeaveTransferResp struct {
@@ -1798,6 +1888,8 @@ type ApproveLeaveTransferReq struct {
 	ApplyId        int64  `thrift:"apply_id,1" frugal:"1,default,i64" json:"apply_id"`
 	ApprovalStatus int8   `thrift:"approval_status,2" frugal:"2,default,i8" json:"approval_status"`
 	ApproverId     string `thrift:"approver_id,3" frugal:"3,default,string" json:"approver_id"`
+	ApproverName   string `thrift:"approver_name,4" frugal:"4,default,string" json:"approver_name"`
+	ApprovalRemark string `thrift:"approval_remark,5" frugal:"5,default,string" json:"approval_remark"`
 }
 
 func NewApproveLeaveTransferReq() *ApproveLeaveTransferReq {
@@ -1818,6 +1910,14 @@ func (p *ApproveLeaveTransferReq) GetApprovalStatus() (v int8) {
 func (p *ApproveLeaveTransferReq) GetApproverId() (v string) {
 	return p.ApproverId
 }
+
+func (p *ApproveLeaveTransferReq) GetApproverName() (v string) {
+	return p.ApproverName
+}
+
+func (p *ApproveLeaveTransferReq) GetApprovalRemark() (v string) {
+	return p.ApprovalRemark
+}
 func (p *ApproveLeaveTransferReq) SetApplyId(val int64) {
 	p.ApplyId = val
 }
@@ -1826,6 +1926,12 @@ func (p *ApproveLeaveTransferReq) SetApprovalStatus(val int8) {
 }
 func (p *ApproveLeaveTransferReq) SetApproverId(val string) {
 	p.ApproverId = val
+}
+func (p *ApproveLeaveTransferReq) SetApproverName(val string) {
+	p.ApproverName = val
+}
+func (p *ApproveLeaveTransferReq) SetApprovalRemark(val string) {
+	p.ApprovalRemark = val
 }
 
 func (p *ApproveLeaveTransferReq) String() string {
@@ -1839,6 +1945,8 @@ var fieldIDToName_ApproveLeaveTransferReq = map[int16]string{
 	1: "apply_id",
 	2: "approval_status",
 	3: "approver_id",
+	4: "approver_name",
+	5: "approval_remark",
 }
 
 type ApproveLeaveTransferResp struct {
@@ -1880,22 +1988,34 @@ var fieldIDToName_ApproveLeaveTransferResp = map[int16]string{
 }
 
 type LeaveTransferItem struct {
-	ApplyId        int64  `thrift:"apply_id,1" frugal:"1,default,i64" json:"apply_id"`
-	CsId           string `thrift:"cs_id,2" frugal:"2,default,string" json:"cs_id"`
-	CsName         string `thrift:"cs_name,3" frugal:"3,default,string" json:"cs_name"`
-	DeptId         string `thrift:"dept_id,4" frugal:"4,default,string" json:"dept_id"`
-	TeamId         string `thrift:"team_id,5" frugal:"5,default,string" json:"team_id"`
-	ApplyType      int8   `thrift:"apply_type,6" frugal:"6,default,i8" json:"apply_type"`
-	TargetDate     string `thrift:"target_date,7" frugal:"7,default,string" json:"target_date"`
-	ShiftId        int64  `thrift:"shift_id,8" frugal:"8,default,i64" json:"shift_id"`
-	ShiftName      string `thrift:"shift_name,9" frugal:"9,default,string" json:"shift_name"`
-	TargetCsId     string `thrift:"target_cs_id,10" frugal:"10,default,string" json:"target_cs_id"`
-	TargetCsName   string `thrift:"target_cs_name,11" frugal:"11,default,string" json:"target_cs_name"`
-	ApprovalStatus int8   `thrift:"approval_status,12" frugal:"12,default,i8" json:"approval_status"`
-	ApproverId     string `thrift:"approver_id,13" frugal:"13,default,string" json:"approver_id"`
-	ApprovalTime   string `thrift:"approval_time,14" frugal:"14,default,string" json:"approval_time"`
-	Reason         string `thrift:"reason,15" frugal:"15,default,string" json:"reason"`
-	CreateTime     string `thrift:"create_time,16" frugal:"16,default,string" json:"create_time"`
+	ApplyId         int64           `thrift:"apply_id,1" frugal:"1,default,i64" json:"apply_id"`
+	CsId            string          `thrift:"cs_id,2" frugal:"2,default,string" json:"cs_id"`
+	CsName          string          `thrift:"cs_name,3" frugal:"3,default,string" json:"cs_name"`
+	DeptId          string          `thrift:"dept_id,4" frugal:"4,default,string" json:"dept_id"`
+	TeamId          string          `thrift:"team_id,5" frugal:"5,default,string" json:"team_id"`
+	ApplyType       int8            `thrift:"apply_type,6" frugal:"6,default,i8" json:"apply_type"`
+	TargetDate      string          `thrift:"target_date,7" frugal:"7,default,string" json:"target_date"`
+	ShiftId         int64           `thrift:"shift_id,8" frugal:"8,default,i64" json:"shift_id"`
+	ShiftName       string          `thrift:"shift_name,9" frugal:"9,default,string" json:"shift_name"`
+	TargetCsId      string          `thrift:"target_cs_id,10" frugal:"10,default,string" json:"target_cs_id"`
+	TargetCsName    string          `thrift:"target_cs_name,11" frugal:"11,default,string" json:"target_cs_name"`
+	ApprovalStatus  int8            `thrift:"approval_status,12" frugal:"12,default,i8" json:"approval_status"`
+	ApproverId      string          `thrift:"approver_id,13" frugal:"13,default,string" json:"approver_id"`
+	ApprovalTime    string          `thrift:"approval_time,14" frugal:"14,default,string" json:"approval_time"`
+	Reason          string          `thrift:"reason,15" frugal:"15,default,string" json:"reason"`
+	CreateTime      string          `thrift:"create_time,16" frugal:"16,default,string" json:"create_time"`
+	StartDate       string          `thrift:"start_date,17" frugal:"17,default,string" json:"start_date"`
+	EndDate         string          `thrift:"end_date,18" frugal:"18,default,string" json:"end_date"`
+	StartPeriod     int8            `thrift:"start_period,19" frugal:"19,default,i8" json:"start_period"`
+	EndPeriod       int8            `thrift:"end_period,20" frugal:"20,default,i8" json:"end_period"`
+	ApproverName    string          `thrift:"approver_name,21" frugal:"21,default,string" json:"approver_name"`
+	ApprovalRemark  string          `thrift:"approval_remark,22" frugal:"22,default,string" json:"approval_remark"`
+	TargetShiftName string          `thrift:"target_shift_name,23" frugal:"23,default,string" json:"target_shift_name"`
+	TargetShiftTime string          `thrift:"target_shift_time,24" frugal:"24,default,string" json:"target_shift_time"`
+	ApproverRole    string          `thrift:"approver_role,25" frugal:"25,default,string" json:"approver_role"`
+	AuditLogs       []*AuditLogItem `thrift:"audit_logs,26" frugal:"26,default,list<AuditLogItem>" json:"audit_logs"`
+	LeaveType       int8            `thrift:"leave_type,27" frugal:"27,default,i8" json:"leave_type"`
+	Attachments     string          `thrift:"attachments,28" frugal:"28,default,string" json:"attachments"`
 }
 
 func NewLeaveTransferItem() *LeaveTransferItem {
@@ -1968,6 +2088,54 @@ func (p *LeaveTransferItem) GetReason() (v string) {
 func (p *LeaveTransferItem) GetCreateTime() (v string) {
 	return p.CreateTime
 }
+
+func (p *LeaveTransferItem) GetStartDate() (v string) {
+	return p.StartDate
+}
+
+func (p *LeaveTransferItem) GetEndDate() (v string) {
+	return p.EndDate
+}
+
+func (p *LeaveTransferItem) GetStartPeriod() (v int8) {
+	return p.StartPeriod
+}
+
+func (p *LeaveTransferItem) GetEndPeriod() (v int8) {
+	return p.EndPeriod
+}
+
+func (p *LeaveTransferItem) GetApproverName() (v string) {
+	return p.ApproverName
+}
+
+func (p *LeaveTransferItem) GetApprovalRemark() (v string) {
+	return p.ApprovalRemark
+}
+
+func (p *LeaveTransferItem) GetTargetShiftName() (v string) {
+	return p.TargetShiftName
+}
+
+func (p *LeaveTransferItem) GetTargetShiftTime() (v string) {
+	return p.TargetShiftTime
+}
+
+func (p *LeaveTransferItem) GetApproverRole() (v string) {
+	return p.ApproverRole
+}
+
+func (p *LeaveTransferItem) GetAuditLogs() (v []*AuditLogItem) {
+	return p.AuditLogs
+}
+
+func (p *LeaveTransferItem) GetLeaveType() (v int8) {
+	return p.LeaveType
+}
+
+func (p *LeaveTransferItem) GetAttachments() (v string) {
+	return p.Attachments
+}
 func (p *LeaveTransferItem) SetApplyId(val int64) {
 	p.ApplyId = val
 }
@@ -2016,6 +2184,42 @@ func (p *LeaveTransferItem) SetReason(val string) {
 func (p *LeaveTransferItem) SetCreateTime(val string) {
 	p.CreateTime = val
 }
+func (p *LeaveTransferItem) SetStartDate(val string) {
+	p.StartDate = val
+}
+func (p *LeaveTransferItem) SetEndDate(val string) {
+	p.EndDate = val
+}
+func (p *LeaveTransferItem) SetStartPeriod(val int8) {
+	p.StartPeriod = val
+}
+func (p *LeaveTransferItem) SetEndPeriod(val int8) {
+	p.EndPeriod = val
+}
+func (p *LeaveTransferItem) SetApproverName(val string) {
+	p.ApproverName = val
+}
+func (p *LeaveTransferItem) SetApprovalRemark(val string) {
+	p.ApprovalRemark = val
+}
+func (p *LeaveTransferItem) SetTargetShiftName(val string) {
+	p.TargetShiftName = val
+}
+func (p *LeaveTransferItem) SetTargetShiftTime(val string) {
+	p.TargetShiftTime = val
+}
+func (p *LeaveTransferItem) SetApproverRole(val string) {
+	p.ApproverRole = val
+}
+func (p *LeaveTransferItem) SetAuditLogs(val []*AuditLogItem) {
+	p.AuditLogs = val
+}
+func (p *LeaveTransferItem) SetLeaveType(val int8) {
+	p.LeaveType = val
+}
+func (p *LeaveTransferItem) SetAttachments(val string) {
+	p.Attachments = val
+}
 
 func (p *LeaveTransferItem) String() string {
 	if p == nil {
@@ -2041,6 +2245,926 @@ var fieldIDToName_LeaveTransferItem = map[int16]string{
 	14: "approval_time",
 	15: "reason",
 	16: "create_time",
+	17: "start_date",
+	18: "end_date",
+	19: "start_period",
+	20: "end_period",
+	21: "approver_name",
+	22: "approval_remark",
+	23: "target_shift_name",
+	24: "target_shift_time",
+	25: "approver_role",
+	26: "audit_logs",
+	27: "leave_type",
+	28: "attachments",
+}
+
+type AuditLogItem struct {
+	LogId        int64  `thrift:"log_id,1" frugal:"1,default,i64" json:"log_id"`
+	ApplyId      int64  `thrift:"apply_id,2" frugal:"2,default,i64" json:"apply_id"`
+	Action       string `thrift:"action,3" frugal:"3,default,string" json:"action"`
+	OperatorId   string `thrift:"operator_id,4" frugal:"4,default,string" json:"operator_id"`
+	OperatorName string `thrift:"operator_name,5" frugal:"5,default,string" json:"operator_name"`
+	OperatorRole string `thrift:"operator_role,6" frugal:"6,default,string" json:"operator_role"`
+	Remark       string `thrift:"remark,7" frugal:"7,default,string" json:"remark"`
+	CreateTime   string `thrift:"create_time,8" frugal:"8,default,string" json:"create_time"`
+}
+
+func NewAuditLogItem() *AuditLogItem {
+	return &AuditLogItem{}
+}
+
+func (p *AuditLogItem) InitDefault() {
+}
+
+func (p *AuditLogItem) GetLogId() (v int64) {
+	return p.LogId
+}
+
+func (p *AuditLogItem) GetApplyId() (v int64) {
+	return p.ApplyId
+}
+
+func (p *AuditLogItem) GetAction() (v string) {
+	return p.Action
+}
+
+func (p *AuditLogItem) GetOperatorId() (v string) {
+	return p.OperatorId
+}
+
+func (p *AuditLogItem) GetOperatorName() (v string) {
+	return p.OperatorName
+}
+
+func (p *AuditLogItem) GetOperatorRole() (v string) {
+	return p.OperatorRole
+}
+
+func (p *AuditLogItem) GetRemark() (v string) {
+	return p.Remark
+}
+
+func (p *AuditLogItem) GetCreateTime() (v string) {
+	return p.CreateTime
+}
+func (p *AuditLogItem) SetLogId(val int64) {
+	p.LogId = val
+}
+func (p *AuditLogItem) SetApplyId(val int64) {
+	p.ApplyId = val
+}
+func (p *AuditLogItem) SetAction(val string) {
+	p.Action = val
+}
+func (p *AuditLogItem) SetOperatorId(val string) {
+	p.OperatorId = val
+}
+func (p *AuditLogItem) SetOperatorName(val string) {
+	p.OperatorName = val
+}
+func (p *AuditLogItem) SetOperatorRole(val string) {
+	p.OperatorRole = val
+}
+func (p *AuditLogItem) SetRemark(val string) {
+	p.Remark = val
+}
+func (p *AuditLogItem) SetCreateTime(val string) {
+	p.CreateTime = val
+}
+
+func (p *AuditLogItem) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("AuditLogItem(%+v)", *p)
+}
+
+var fieldIDToName_AuditLogItem = map[int16]string{
+	1: "log_id",
+	2: "apply_id",
+	3: "action",
+	4: "operator_id",
+	5: "operator_name",
+	6: "operator_role",
+	7: "remark",
+	8: "create_time",
+}
+
+type ChainSwapItem struct {
+	CsId           string `thrift:"cs_id,1" frugal:"1,default,string" json:"cs_id"`
+	FromScheduleId int64  `thrift:"from_schedule_id,2" frugal:"2,default,i64" json:"from_schedule_id"`
+	ToScheduleId   int64  `thrift:"to_schedule_id,3" frugal:"3,default,i64" json:"to_schedule_id"`
+	Step           int32  `thrift:"step,4" frugal:"4,default,i32" json:"step"`
+}
+
+func NewChainSwapItem() *ChainSwapItem {
+	return &ChainSwapItem{}
+}
+
+func (p *ChainSwapItem) InitDefault() {
+}
+
+func (p *ChainSwapItem) GetCsId() (v string) {
+	return p.CsId
+}
+
+func (p *ChainSwapItem) GetFromScheduleId() (v int64) {
+	return p.FromScheduleId
+}
+
+func (p *ChainSwapItem) GetToScheduleId() (v int64) {
+	return p.ToScheduleId
+}
+
+func (p *ChainSwapItem) GetStep() (v int32) {
+	return p.Step
+}
+func (p *ChainSwapItem) SetCsId(val string) {
+	p.CsId = val
+}
+func (p *ChainSwapItem) SetFromScheduleId(val int64) {
+	p.FromScheduleId = val
+}
+func (p *ChainSwapItem) SetToScheduleId(val int64) {
+	p.ToScheduleId = val
+}
+func (p *ChainSwapItem) SetStep(val int32) {
+	p.Step = val
+}
+
+func (p *ChainSwapItem) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ChainSwapItem(%+v)", *p)
+}
+
+var fieldIDToName_ChainSwapItem = map[int16]string{
+	1: "cs_id",
+	2: "from_schedule_id",
+	3: "to_schedule_id",
+	4: "step",
+}
+
+type ApplyChainSwapReq struct {
+	ApplicantId string           `thrift:"applicant_id,1" frugal:"1,default,string" json:"applicant_id"`
+	DeptId      string           `thrift:"dept_id,2" frugal:"2,default,string" json:"dept_id"`
+	Reason      string           `thrift:"reason,3" frugal:"3,default,string" json:"reason"`
+	Items       []*ChainSwapItem `thrift:"items,4" frugal:"4,default,list<ChainSwapItem>" json:"items"`
+}
+
+func NewApplyChainSwapReq() *ApplyChainSwapReq {
+	return &ApplyChainSwapReq{}
+}
+
+func (p *ApplyChainSwapReq) InitDefault() {
+}
+
+func (p *ApplyChainSwapReq) GetApplicantId() (v string) {
+	return p.ApplicantId
+}
+
+func (p *ApplyChainSwapReq) GetDeptId() (v string) {
+	return p.DeptId
+}
+
+func (p *ApplyChainSwapReq) GetReason() (v string) {
+	return p.Reason
+}
+
+func (p *ApplyChainSwapReq) GetItems() (v []*ChainSwapItem) {
+	return p.Items
+}
+func (p *ApplyChainSwapReq) SetApplicantId(val string) {
+	p.ApplicantId = val
+}
+func (p *ApplyChainSwapReq) SetDeptId(val string) {
+	p.DeptId = val
+}
+func (p *ApplyChainSwapReq) SetReason(val string) {
+	p.Reason = val
+}
+func (p *ApplyChainSwapReq) SetItems(val []*ChainSwapItem) {
+	p.Items = val
+}
+
+func (p *ApplyChainSwapReq) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ApplyChainSwapReq(%+v)", *p)
+}
+
+var fieldIDToName_ApplyChainSwapReq = map[int16]string{
+	1: "applicant_id",
+	2: "dept_id",
+	3: "reason",
+	4: "items",
+}
+
+type ApplyChainSwapResp struct {
+	BaseResp  *BaseResp `thrift:"base_resp,1" frugal:"1,default,BaseResp" json:"base_resp"`
+	RequestId int64     `thrift:"request_id,2" frugal:"2,default,i64" json:"request_id"`
+}
+
+func NewApplyChainSwapResp() *ApplyChainSwapResp {
+	return &ApplyChainSwapResp{}
+}
+
+func (p *ApplyChainSwapResp) InitDefault() {
+}
+
+var ApplyChainSwapResp_BaseResp_DEFAULT *BaseResp
+
+func (p *ApplyChainSwapResp) GetBaseResp() (v *BaseResp) {
+	if !p.IsSetBaseResp() {
+		return ApplyChainSwapResp_BaseResp_DEFAULT
+	}
+	return p.BaseResp
+}
+
+func (p *ApplyChainSwapResp) GetRequestId() (v int64) {
+	return p.RequestId
+}
+func (p *ApplyChainSwapResp) SetBaseResp(val *BaseResp) {
+	p.BaseResp = val
+}
+func (p *ApplyChainSwapResp) SetRequestId(val int64) {
+	p.RequestId = val
+}
+
+func (p *ApplyChainSwapResp) IsSetBaseResp() bool {
+	return p.BaseResp != nil
+}
+
+func (p *ApplyChainSwapResp) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ApplyChainSwapResp(%+v)", *p)
+}
+
+var fieldIDToName_ApplyChainSwapResp = map[int16]string{
+	1: "base_resp",
+	2: "request_id",
+}
+
+type ApproveChainSwapReq struct {
+	RequestId      int64  `thrift:"request_id,1" frugal:"1,default,i64" json:"request_id"`
+	ApprovalStatus int8   `thrift:"approval_status,2" frugal:"2,default,i8" json:"approval_status"`
+	ApproverId     string `thrift:"approver_id,3" frugal:"3,default,string" json:"approver_id"`
+	ApproverName   string `thrift:"approver_name,4" frugal:"4,default,string" json:"approver_name"`
+	ApprovalRemark string `thrift:"approval_remark,5" frugal:"5,default,string" json:"approval_remark"`
+}
+
+func NewApproveChainSwapReq() *ApproveChainSwapReq {
+	return &ApproveChainSwapReq{}
+}
+
+func (p *ApproveChainSwapReq) InitDefault() {
+}
+
+func (p *ApproveChainSwapReq) GetRequestId() (v int64) {
+	return p.RequestId
+}
+
+func (p *ApproveChainSwapReq) GetApprovalStatus() (v int8) {
+	return p.ApprovalStatus
+}
+
+func (p *ApproveChainSwapReq) GetApproverId() (v string) {
+	return p.ApproverId
+}
+
+func (p *ApproveChainSwapReq) GetApproverName() (v string) {
+	return p.ApproverName
+}
+
+func (p *ApproveChainSwapReq) GetApprovalRemark() (v string) {
+	return p.ApprovalRemark
+}
+func (p *ApproveChainSwapReq) SetRequestId(val int64) {
+	p.RequestId = val
+}
+func (p *ApproveChainSwapReq) SetApprovalStatus(val int8) {
+	p.ApprovalStatus = val
+}
+func (p *ApproveChainSwapReq) SetApproverId(val string) {
+	p.ApproverId = val
+}
+func (p *ApproveChainSwapReq) SetApproverName(val string) {
+	p.ApproverName = val
+}
+func (p *ApproveChainSwapReq) SetApprovalRemark(val string) {
+	p.ApprovalRemark = val
+}
+
+func (p *ApproveChainSwapReq) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ApproveChainSwapReq(%+v)", *p)
+}
+
+var fieldIDToName_ApproveChainSwapReq = map[int16]string{
+	1: "request_id",
+	2: "approval_status",
+	3: "approver_id",
+	4: "approver_name",
+	5: "approval_remark",
+}
+
+type ApproveChainSwapResp struct {
+	BaseResp *BaseResp `thrift:"base_resp,1" frugal:"1,default,BaseResp" json:"base_resp"`
+}
+
+func NewApproveChainSwapResp() *ApproveChainSwapResp {
+	return &ApproveChainSwapResp{}
+}
+
+func (p *ApproveChainSwapResp) InitDefault() {
+}
+
+var ApproveChainSwapResp_BaseResp_DEFAULT *BaseResp
+
+func (p *ApproveChainSwapResp) GetBaseResp() (v *BaseResp) {
+	if !p.IsSetBaseResp() {
+		return ApproveChainSwapResp_BaseResp_DEFAULT
+	}
+	return p.BaseResp
+}
+func (p *ApproveChainSwapResp) SetBaseResp(val *BaseResp) {
+	p.BaseResp = val
+}
+
+func (p *ApproveChainSwapResp) IsSetBaseResp() bool {
+	return p.BaseResp != nil
+}
+
+func (p *ApproveChainSwapResp) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ApproveChainSwapResp(%+v)", *p)
+}
+
+var fieldIDToName_ApproveChainSwapResp = map[int16]string{
+	1: "base_resp",
+}
+
+type ListChainSwapReq struct {
+	Status   int8   `thrift:"status,1" frugal:"1,default,i8" json:"status"`
+	Keyword  string `thrift:"keyword,2" frugal:"2,default,string" json:"keyword"`
+	Page     int32  `thrift:"page,3" frugal:"3,default,i32" json:"page"`
+	PageSize int32  `thrift:"page_size,4" frugal:"4,default,i32" json:"page_size"`
+}
+
+func NewListChainSwapReq() *ListChainSwapReq {
+	return &ListChainSwapReq{}
+}
+
+func (p *ListChainSwapReq) InitDefault() {
+}
+
+func (p *ListChainSwapReq) GetStatus() (v int8) {
+	return p.Status
+}
+
+func (p *ListChainSwapReq) GetKeyword() (v string) {
+	return p.Keyword
+}
+
+func (p *ListChainSwapReq) GetPage() (v int32) {
+	return p.Page
+}
+
+func (p *ListChainSwapReq) GetPageSize() (v int32) {
+	return p.PageSize
+}
+func (p *ListChainSwapReq) SetStatus(val int8) {
+	p.Status = val
+}
+func (p *ListChainSwapReq) SetKeyword(val string) {
+	p.Keyword = val
+}
+func (p *ListChainSwapReq) SetPage(val int32) {
+	p.Page = val
+}
+func (p *ListChainSwapReq) SetPageSize(val int32) {
+	p.PageSize = val
+}
+
+func (p *ListChainSwapReq) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ListChainSwapReq(%+v)", *p)
+}
+
+var fieldIDToName_ListChainSwapReq = map[int16]string{
+	1: "status",
+	2: "keyword",
+	3: "page",
+	4: "page_size",
+}
+
+type ChainSwapListItem struct {
+	SwapId         int64  `thrift:"swap_id,1" frugal:"1,default,i64" json:"swap_id"`
+	ApplicantId    string `thrift:"applicant_id,2" frugal:"2,default,string" json:"applicant_id"`
+	ApplicantName  string `thrift:"applicant_name,3" frugal:"3,default,string" json:"applicant_name"`
+	DeptId         string `thrift:"dept_id,4" frugal:"4,default,string" json:"dept_id"`
+	Reason         string `thrift:"reason,5" frugal:"5,default,string" json:"reason"`
+	Status         int8   `thrift:"status,6" frugal:"6,default,i8" json:"status"`
+	ItemsCount     int32  `thrift:"items_count,7" frugal:"7,default,i32" json:"items_count"`
+	CreateTime     string `thrift:"create_time,8" frugal:"8,default,string" json:"create_time"`
+	ApproverId     string `thrift:"approver_id,9" frugal:"9,default,string" json:"approver_id"`
+	ApproverName   string `thrift:"approver_name,10" frugal:"10,default,string" json:"approver_name"`
+	ApprovedAt     string `thrift:"approved_at,11" frugal:"11,default,string" json:"approved_at"`
+	ApproveComment string `thrift:"approve_comment,12" frugal:"12,default,string" json:"approve_comment"`
+}
+
+func NewChainSwapListItem() *ChainSwapListItem {
+	return &ChainSwapListItem{}
+}
+
+func (p *ChainSwapListItem) InitDefault() {
+}
+
+func (p *ChainSwapListItem) GetSwapId() (v int64) {
+	return p.SwapId
+}
+
+func (p *ChainSwapListItem) GetApplicantId() (v string) {
+	return p.ApplicantId
+}
+
+func (p *ChainSwapListItem) GetApplicantName() (v string) {
+	return p.ApplicantName
+}
+
+func (p *ChainSwapListItem) GetDeptId() (v string) {
+	return p.DeptId
+}
+
+func (p *ChainSwapListItem) GetReason() (v string) {
+	return p.Reason
+}
+
+func (p *ChainSwapListItem) GetStatus() (v int8) {
+	return p.Status
+}
+
+func (p *ChainSwapListItem) GetItemsCount() (v int32) {
+	return p.ItemsCount
+}
+
+func (p *ChainSwapListItem) GetCreateTime() (v string) {
+	return p.CreateTime
+}
+
+func (p *ChainSwapListItem) GetApproverId() (v string) {
+	return p.ApproverId
+}
+
+func (p *ChainSwapListItem) GetApproverName() (v string) {
+	return p.ApproverName
+}
+
+func (p *ChainSwapListItem) GetApprovedAt() (v string) {
+	return p.ApprovedAt
+}
+
+func (p *ChainSwapListItem) GetApproveComment() (v string) {
+	return p.ApproveComment
+}
+func (p *ChainSwapListItem) SetSwapId(val int64) {
+	p.SwapId = val
+}
+func (p *ChainSwapListItem) SetApplicantId(val string) {
+	p.ApplicantId = val
+}
+func (p *ChainSwapListItem) SetApplicantName(val string) {
+	p.ApplicantName = val
+}
+func (p *ChainSwapListItem) SetDeptId(val string) {
+	p.DeptId = val
+}
+func (p *ChainSwapListItem) SetReason(val string) {
+	p.Reason = val
+}
+func (p *ChainSwapListItem) SetStatus(val int8) {
+	p.Status = val
+}
+func (p *ChainSwapListItem) SetItemsCount(val int32) {
+	p.ItemsCount = val
+}
+func (p *ChainSwapListItem) SetCreateTime(val string) {
+	p.CreateTime = val
+}
+func (p *ChainSwapListItem) SetApproverId(val string) {
+	p.ApproverId = val
+}
+func (p *ChainSwapListItem) SetApproverName(val string) {
+	p.ApproverName = val
+}
+func (p *ChainSwapListItem) SetApprovedAt(val string) {
+	p.ApprovedAt = val
+}
+func (p *ChainSwapListItem) SetApproveComment(val string) {
+	p.ApproveComment = val
+}
+
+func (p *ChainSwapListItem) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ChainSwapListItem(%+v)", *p)
+}
+
+var fieldIDToName_ChainSwapListItem = map[int16]string{
+	1:  "swap_id",
+	2:  "applicant_id",
+	3:  "applicant_name",
+	4:  "dept_id",
+	5:  "reason",
+	6:  "status",
+	7:  "items_count",
+	8:  "create_time",
+	9:  "approver_id",
+	10: "approver_name",
+	11: "approved_at",
+	12: "approve_comment",
+}
+
+type ListChainSwapResp struct {
+	BaseResp *BaseResp            `thrift:"base_resp,1" frugal:"1,default,BaseResp" json:"base_resp"`
+	Items    []*ChainSwapListItem `thrift:"items,2" frugal:"2,default,list<ChainSwapListItem>" json:"items"`
+	Total    int64                `thrift:"total,3" frugal:"3,default,i64" json:"total"`
+}
+
+func NewListChainSwapResp() *ListChainSwapResp {
+	return &ListChainSwapResp{}
+}
+
+func (p *ListChainSwapResp) InitDefault() {
+}
+
+var ListChainSwapResp_BaseResp_DEFAULT *BaseResp
+
+func (p *ListChainSwapResp) GetBaseResp() (v *BaseResp) {
+	if !p.IsSetBaseResp() {
+		return ListChainSwapResp_BaseResp_DEFAULT
+	}
+	return p.BaseResp
+}
+
+func (p *ListChainSwapResp) GetItems() (v []*ChainSwapListItem) {
+	return p.Items
+}
+
+func (p *ListChainSwapResp) GetTotal() (v int64) {
+	return p.Total
+}
+func (p *ListChainSwapResp) SetBaseResp(val *BaseResp) {
+	p.BaseResp = val
+}
+func (p *ListChainSwapResp) SetItems(val []*ChainSwapListItem) {
+	p.Items = val
+}
+func (p *ListChainSwapResp) SetTotal(val int64) {
+	p.Total = val
+}
+
+func (p *ListChainSwapResp) IsSetBaseResp() bool {
+	return p.BaseResp != nil
+}
+
+func (p *ListChainSwapResp) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ListChainSwapResp(%+v)", *p)
+}
+
+var fieldIDToName_ListChainSwapResp = map[int16]string{
+	1: "base_resp",
+	2: "items",
+	3: "total",
+}
+
+type GetChainSwapReq struct {
+	SwapId int64 `thrift:"swap_id,1" frugal:"1,default,i64" json:"swap_id"`
+}
+
+func NewGetChainSwapReq() *GetChainSwapReq {
+	return &GetChainSwapReq{}
+}
+
+func (p *GetChainSwapReq) InitDefault() {
+}
+
+func (p *GetChainSwapReq) GetSwapId() (v int64) {
+	return p.SwapId
+}
+func (p *GetChainSwapReq) SetSwapId(val int64) {
+	p.SwapId = val
+}
+
+func (p *GetChainSwapReq) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("GetChainSwapReq(%+v)", *p)
+}
+
+var fieldIDToName_GetChainSwapReq = map[int16]string{
+	1: "swap_id",
+}
+
+type ChainSwapDetailItem struct {
+	CsId           string `thrift:"cs_id,1" frugal:"1,default,string" json:"cs_id"`
+	CsName         string `thrift:"cs_name,2" frugal:"2,default,string" json:"cs_name"`
+	FromScheduleId int64  `thrift:"from_schedule_id,3" frugal:"3,default,i64" json:"from_schedule_id"`
+	FromShiftName  string `thrift:"from_shift_name,4" frugal:"4,default,string" json:"from_shift_name"`
+	ToScheduleId   int64  `thrift:"to_schedule_id,5" frugal:"5,default,i64" json:"to_schedule_id"`
+	ToShiftName    string `thrift:"to_shift_name,6" frugal:"6,default,string" json:"to_shift_name"`
+	Step           int32  `thrift:"step,7" frugal:"7,default,i32" json:"step"`
+	ConflictFlag   int8   `thrift:"conflict_flag,8" frugal:"8,default,i8" json:"conflict_flag"`
+	ConflictReason string `thrift:"conflict_reason,9" frugal:"9,default,string" json:"conflict_reason"`
+}
+
+func NewChainSwapDetailItem() *ChainSwapDetailItem {
+	return &ChainSwapDetailItem{}
+}
+
+func (p *ChainSwapDetailItem) InitDefault() {
+}
+
+func (p *ChainSwapDetailItem) GetCsId() (v string) {
+	return p.CsId
+}
+
+func (p *ChainSwapDetailItem) GetCsName() (v string) {
+	return p.CsName
+}
+
+func (p *ChainSwapDetailItem) GetFromScheduleId() (v int64) {
+	return p.FromScheduleId
+}
+
+func (p *ChainSwapDetailItem) GetFromShiftName() (v string) {
+	return p.FromShiftName
+}
+
+func (p *ChainSwapDetailItem) GetToScheduleId() (v int64) {
+	return p.ToScheduleId
+}
+
+func (p *ChainSwapDetailItem) GetToShiftName() (v string) {
+	return p.ToShiftName
+}
+
+func (p *ChainSwapDetailItem) GetStep() (v int32) {
+	return p.Step
+}
+
+func (p *ChainSwapDetailItem) GetConflictFlag() (v int8) {
+	return p.ConflictFlag
+}
+
+func (p *ChainSwapDetailItem) GetConflictReason() (v string) {
+	return p.ConflictReason
+}
+func (p *ChainSwapDetailItem) SetCsId(val string) {
+	p.CsId = val
+}
+func (p *ChainSwapDetailItem) SetCsName(val string) {
+	p.CsName = val
+}
+func (p *ChainSwapDetailItem) SetFromScheduleId(val int64) {
+	p.FromScheduleId = val
+}
+func (p *ChainSwapDetailItem) SetFromShiftName(val string) {
+	p.FromShiftName = val
+}
+func (p *ChainSwapDetailItem) SetToScheduleId(val int64) {
+	p.ToScheduleId = val
+}
+func (p *ChainSwapDetailItem) SetToShiftName(val string) {
+	p.ToShiftName = val
+}
+func (p *ChainSwapDetailItem) SetStep(val int32) {
+	p.Step = val
+}
+func (p *ChainSwapDetailItem) SetConflictFlag(val int8) {
+	p.ConflictFlag = val
+}
+func (p *ChainSwapDetailItem) SetConflictReason(val string) {
+	p.ConflictReason = val
+}
+
+func (p *ChainSwapDetailItem) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ChainSwapDetailItem(%+v)", *p)
+}
+
+var fieldIDToName_ChainSwapDetailItem = map[int16]string{
+	1: "cs_id",
+	2: "cs_name",
+	3: "from_schedule_id",
+	4: "from_shift_name",
+	5: "to_schedule_id",
+	6: "to_shift_name",
+	7: "step",
+	8: "conflict_flag",
+	9: "conflict_reason",
+}
+
+type ChainSwapDetail struct {
+	SwapId         int64                  `thrift:"swap_id,1" frugal:"1,default,i64" json:"swap_id"`
+	ApplicantId    string                 `thrift:"applicant_id,2" frugal:"2,default,string" json:"applicant_id"`
+	ApplicantName  string                 `thrift:"applicant_name,3" frugal:"3,default,string" json:"applicant_name"`
+	DeptId         string                 `thrift:"dept_id,4" frugal:"4,default,string" json:"dept_id"`
+	Reason         string                 `thrift:"reason,5" frugal:"5,default,string" json:"reason"`
+	Status         int8                   `thrift:"status,6" frugal:"6,default,i8" json:"status"`
+	CreateTime     string                 `thrift:"create_time,7" frugal:"7,default,string" json:"create_time"`
+	ApproverId     string                 `thrift:"approver_id,8" frugal:"8,default,string" json:"approver_id"`
+	ApproverName   string                 `thrift:"approver_name,9" frugal:"9,default,string" json:"approver_name"`
+	ApprovedAt     string                 `thrift:"approved_at,10" frugal:"10,default,string" json:"approved_at"`
+	ApproveComment string                 `thrift:"approve_comment,11" frugal:"11,default,string" json:"approve_comment"`
+	Items          []*ChainSwapDetailItem `thrift:"items,12" frugal:"12,default,list<ChainSwapDetailItem>" json:"items"`
+}
+
+func NewChainSwapDetail() *ChainSwapDetail {
+	return &ChainSwapDetail{}
+}
+
+func (p *ChainSwapDetail) InitDefault() {
+}
+
+func (p *ChainSwapDetail) GetSwapId() (v int64) {
+	return p.SwapId
+}
+
+func (p *ChainSwapDetail) GetApplicantId() (v string) {
+	return p.ApplicantId
+}
+
+func (p *ChainSwapDetail) GetApplicantName() (v string) {
+	return p.ApplicantName
+}
+
+func (p *ChainSwapDetail) GetDeptId() (v string) {
+	return p.DeptId
+}
+
+func (p *ChainSwapDetail) GetReason() (v string) {
+	return p.Reason
+}
+
+func (p *ChainSwapDetail) GetStatus() (v int8) {
+	return p.Status
+}
+
+func (p *ChainSwapDetail) GetCreateTime() (v string) {
+	return p.CreateTime
+}
+
+func (p *ChainSwapDetail) GetApproverId() (v string) {
+	return p.ApproverId
+}
+
+func (p *ChainSwapDetail) GetApproverName() (v string) {
+	return p.ApproverName
+}
+
+func (p *ChainSwapDetail) GetApprovedAt() (v string) {
+	return p.ApprovedAt
+}
+
+func (p *ChainSwapDetail) GetApproveComment() (v string) {
+	return p.ApproveComment
+}
+
+func (p *ChainSwapDetail) GetItems() (v []*ChainSwapDetailItem) {
+	return p.Items
+}
+func (p *ChainSwapDetail) SetSwapId(val int64) {
+	p.SwapId = val
+}
+func (p *ChainSwapDetail) SetApplicantId(val string) {
+	p.ApplicantId = val
+}
+func (p *ChainSwapDetail) SetApplicantName(val string) {
+	p.ApplicantName = val
+}
+func (p *ChainSwapDetail) SetDeptId(val string) {
+	p.DeptId = val
+}
+func (p *ChainSwapDetail) SetReason(val string) {
+	p.Reason = val
+}
+func (p *ChainSwapDetail) SetStatus(val int8) {
+	p.Status = val
+}
+func (p *ChainSwapDetail) SetCreateTime(val string) {
+	p.CreateTime = val
+}
+func (p *ChainSwapDetail) SetApproverId(val string) {
+	p.ApproverId = val
+}
+func (p *ChainSwapDetail) SetApproverName(val string) {
+	p.ApproverName = val
+}
+func (p *ChainSwapDetail) SetApprovedAt(val string) {
+	p.ApprovedAt = val
+}
+func (p *ChainSwapDetail) SetApproveComment(val string) {
+	p.ApproveComment = val
+}
+func (p *ChainSwapDetail) SetItems(val []*ChainSwapDetailItem) {
+	p.Items = val
+}
+
+func (p *ChainSwapDetail) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ChainSwapDetail(%+v)", *p)
+}
+
+var fieldIDToName_ChainSwapDetail = map[int16]string{
+	1:  "swap_id",
+	2:  "applicant_id",
+	3:  "applicant_name",
+	4:  "dept_id",
+	5:  "reason",
+	6:  "status",
+	7:  "create_time",
+	8:  "approver_id",
+	9:  "approver_name",
+	10: "approved_at",
+	11: "approve_comment",
+	12: "items",
+}
+
+type GetChainSwapResp struct {
+	BaseResp *BaseResp        `thrift:"base_resp,1" frugal:"1,default,BaseResp" json:"base_resp"`
+	Item     *ChainSwapDetail `thrift:"item,2" frugal:"2,default,ChainSwapDetail" json:"item"`
+}
+
+func NewGetChainSwapResp() *GetChainSwapResp {
+	return &GetChainSwapResp{}
+}
+
+func (p *GetChainSwapResp) InitDefault() {
+}
+
+var GetChainSwapResp_BaseResp_DEFAULT *BaseResp
+
+func (p *GetChainSwapResp) GetBaseResp() (v *BaseResp) {
+	if !p.IsSetBaseResp() {
+		return GetChainSwapResp_BaseResp_DEFAULT
+	}
+	return p.BaseResp
+}
+
+var GetChainSwapResp_Item_DEFAULT *ChainSwapDetail
+
+func (p *GetChainSwapResp) GetItem() (v *ChainSwapDetail) {
+	if !p.IsSetItem() {
+		return GetChainSwapResp_Item_DEFAULT
+	}
+	return p.Item
+}
+func (p *GetChainSwapResp) SetBaseResp(val *BaseResp) {
+	p.BaseResp = val
+}
+func (p *GetChainSwapResp) SetItem(val *ChainSwapDetail) {
+	p.Item = val
+}
+
+func (p *GetChainSwapResp) IsSetBaseResp() bool {
+	return p.BaseResp != nil
+}
+
+func (p *GetChainSwapResp) IsSetItem() bool {
+	return p.Item != nil
+}
+
+func (p *GetChainSwapResp) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("GetChainSwapResp(%+v)", *p)
+}
+
+var fieldIDToName_GetChainSwapResp = map[int16]string{
+	1: "base_resp",
+	2: "item",
 }
 
 type GetLeaveTransferReq struct {
@@ -2133,6 +3257,7 @@ type ListLeaveTransferReq struct {
 	Keyword        string `thrift:"keyword,2" frugal:"2,default,string" json:"keyword"`
 	Page           int32  `thrift:"page,3" frugal:"3,default,i32" json:"page"`
 	PageSize       int32  `thrift:"page_size,4" frugal:"4,default,i32" json:"page_size"`
+	OperatorId     string `thrift:"operator_id,5" frugal:"5,default,string" json:"operator_id"`
 }
 
 func NewListLeaveTransferReq() *ListLeaveTransferReq {
@@ -2157,6 +3282,10 @@ func (p *ListLeaveTransferReq) GetPage() (v int32) {
 func (p *ListLeaveTransferReq) GetPageSize() (v int32) {
 	return p.PageSize
 }
+
+func (p *ListLeaveTransferReq) GetOperatorId() (v string) {
+	return p.OperatorId
+}
 func (p *ListLeaveTransferReq) SetApprovalStatus(val int8) {
 	p.ApprovalStatus = val
 }
@@ -2168,6 +3297,9 @@ func (p *ListLeaveTransferReq) SetPage(val int32) {
 }
 func (p *ListLeaveTransferReq) SetPageSize(val int32) {
 	p.PageSize = val
+}
+func (p *ListLeaveTransferReq) SetOperatorId(val string) {
+	p.OperatorId = val
 }
 
 func (p *ListLeaveTransferReq) String() string {
@@ -2182,6 +3314,7 @@ var fieldIDToName_ListLeaveTransferReq = map[int16]string{
 	2: "keyword",
 	3: "page",
 	4: "page_size",
+	5: "operator_id",
 }
 
 type ListLeaveTransferResp struct {
@@ -5982,6 +7115,73 @@ var fieldIDToName_RegisterResp = map[int16]string{
 	2: "user_id",
 }
 
+type LogoutReq struct {
+	CsId string `thrift:"cs_id,1" frugal:"1,default,string" json:"cs_id"`
+}
+
+func NewLogoutReq() *LogoutReq {
+	return &LogoutReq{}
+}
+
+func (p *LogoutReq) InitDefault() {
+}
+
+func (p *LogoutReq) GetCsId() (v string) {
+	return p.CsId
+}
+func (p *LogoutReq) SetCsId(val string) {
+	p.CsId = val
+}
+
+func (p *LogoutReq) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("LogoutReq(%+v)", *p)
+}
+
+var fieldIDToName_LogoutReq = map[int16]string{
+	1: "cs_id",
+}
+
+type LogoutResp struct {
+	BaseResp *BaseResp `thrift:"base_resp,1" frugal:"1,default,BaseResp" json:"base_resp"`
+}
+
+func NewLogoutResp() *LogoutResp {
+	return &LogoutResp{}
+}
+
+func (p *LogoutResp) InitDefault() {
+}
+
+var LogoutResp_BaseResp_DEFAULT *BaseResp
+
+func (p *LogoutResp) GetBaseResp() (v *BaseResp) {
+	if !p.IsSetBaseResp() {
+		return LogoutResp_BaseResp_DEFAULT
+	}
+	return p.BaseResp
+}
+func (p *LogoutResp) SetBaseResp(val *BaseResp) {
+	p.BaseResp = val
+}
+
+func (p *LogoutResp) IsSetBaseResp() bool {
+	return p.BaseResp != nil
+}
+
+func (p *LogoutResp) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("LogoutResp(%+v)", *p)
+}
+
+var fieldIDToName_LogoutResp = map[int16]string{
+	1: "base_resp",
+}
+
 type EncryptMessageReq struct {
 	MsgContent string `thrift:"msg_content,1" frugal:"1,default,string" json:"msg_content"`
 }
@@ -6665,6 +7865,514 @@ var fieldIDToName_QueryArchivedConversationResp = map[int16]string{
 	3: "total",
 }
 
+type HeartbeatReq struct {
+	CsId string `thrift:"cs_id,1" frugal:"1,default,string" json:"cs_id"`
+}
+
+func NewHeartbeatReq() *HeartbeatReq {
+	return &HeartbeatReq{}
+}
+
+func (p *HeartbeatReq) InitDefault() {
+}
+
+func (p *HeartbeatReq) GetCsId() (v string) {
+	return p.CsId
+}
+func (p *HeartbeatReq) SetCsId(val string) {
+	p.CsId = val
+}
+
+func (p *HeartbeatReq) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("HeartbeatReq(%+v)", *p)
+}
+
+var fieldIDToName_HeartbeatReq = map[int16]string{
+	1: "cs_id",
+}
+
+type HeartbeatResp struct {
+	BaseResp     *BaseResp `thrift:"base_resp,1" frugal:"1,default,BaseResp" json:"base_resp"`
+	OnlineStatus int8      `thrift:"online_status,2" frugal:"2,default,i8" json:"online_status"`
+}
+
+func NewHeartbeatResp() *HeartbeatResp {
+	return &HeartbeatResp{}
+}
+
+func (p *HeartbeatResp) InitDefault() {
+}
+
+var HeartbeatResp_BaseResp_DEFAULT *BaseResp
+
+func (p *HeartbeatResp) GetBaseResp() (v *BaseResp) {
+	if !p.IsSetBaseResp() {
+		return HeartbeatResp_BaseResp_DEFAULT
+	}
+	return p.BaseResp
+}
+
+func (p *HeartbeatResp) GetOnlineStatus() (v int8) {
+	return p.OnlineStatus
+}
+func (p *HeartbeatResp) SetBaseResp(val *BaseResp) {
+	p.BaseResp = val
+}
+func (p *HeartbeatResp) SetOnlineStatus(val int8) {
+	p.OnlineStatus = val
+}
+
+func (p *HeartbeatResp) IsSetBaseResp() bool {
+	return p.BaseResp != nil
+}
+
+func (p *HeartbeatResp) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("HeartbeatResp(%+v)", *p)
+}
+
+var fieldIDToName_HeartbeatResp = map[int16]string{
+	1: "base_resp",
+	2: "online_status",
+}
+
+type ListOnlineCustomersReq struct {
+	DeptId string `thrift:"dept_id,1" frugal:"1,default,string" json:"dept_id"`
+}
+
+func NewListOnlineCustomersReq() *ListOnlineCustomersReq {
+	return &ListOnlineCustomersReq{}
+}
+
+func (p *ListOnlineCustomersReq) InitDefault() {
+}
+
+func (p *ListOnlineCustomersReq) GetDeptId() (v string) {
+	return p.DeptId
+}
+func (p *ListOnlineCustomersReq) SetDeptId(val string) {
+	p.DeptId = val
+}
+
+func (p *ListOnlineCustomersReq) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ListOnlineCustomersReq(%+v)", *p)
+}
+
+var fieldIDToName_ListOnlineCustomersReq = map[int16]string{
+	1: "dept_id",
+}
+
+type ListOnlineCustomersResp struct {
+	BaseResp  *BaseResp        `thrift:"base_resp,1" frugal:"1,default,BaseResp" json:"base_resp"`
+	Customers []*CustomerAgent `thrift:"customers,2" frugal:"2,default,list<CustomerAgent>" json:"customers"`
+	Total     int64            `thrift:"total,3" frugal:"3,default,i64" json:"total"`
+}
+
+func NewListOnlineCustomersResp() *ListOnlineCustomersResp {
+	return &ListOnlineCustomersResp{}
+}
+
+func (p *ListOnlineCustomersResp) InitDefault() {
+}
+
+var ListOnlineCustomersResp_BaseResp_DEFAULT *BaseResp
+
+func (p *ListOnlineCustomersResp) GetBaseResp() (v *BaseResp) {
+	if !p.IsSetBaseResp() {
+		return ListOnlineCustomersResp_BaseResp_DEFAULT
+	}
+	return p.BaseResp
+}
+
+func (p *ListOnlineCustomersResp) GetCustomers() (v []*CustomerAgent) {
+	return p.Customers
+}
+
+func (p *ListOnlineCustomersResp) GetTotal() (v int64) {
+	return p.Total
+}
+func (p *ListOnlineCustomersResp) SetBaseResp(val *BaseResp) {
+	p.BaseResp = val
+}
+func (p *ListOnlineCustomersResp) SetCustomers(val []*CustomerAgent) {
+	p.Customers = val
+}
+func (p *ListOnlineCustomersResp) SetTotal(val int64) {
+	p.Total = val
+}
+
+func (p *ListOnlineCustomersResp) IsSetBaseResp() bool {
+	return p.BaseResp != nil
+}
+
+func (p *ListOnlineCustomersResp) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ListOnlineCustomersResp(%+v)", *p)
+}
+
+var fieldIDToName_ListOnlineCustomersResp = map[int16]string{
+	1: "base_resp",
+	2: "customers",
+	3: "total",
+}
+
+type SwapCandidate struct {
+	CsId           string `thrift:"cs_id,1" frugal:"1,default,string" json:"cs_id"`
+	CsName         string `thrift:"cs_name,2" frugal:"2,default,string" json:"cs_name"`
+	ShiftId        int64  `thrift:"shift_id,3" frugal:"3,default,i64" json:"shift_id"`
+	ShiftName      string `thrift:"shift_name,4" frugal:"4,default,string" json:"shift_name"`
+	ShiftTime      string `thrift:"shift_time,5" frugal:"5,default,string" json:"shift_time"`
+	HasPendingSwap int8   `thrift:"has_pending_swap,6" frugal:"6,default,i8" json:"has_pending_swap"`
+}
+
+func NewSwapCandidate() *SwapCandidate {
+	return &SwapCandidate{}
+}
+
+func (p *SwapCandidate) InitDefault() {
+}
+
+func (p *SwapCandidate) GetCsId() (v string) {
+	return p.CsId
+}
+
+func (p *SwapCandidate) GetCsName() (v string) {
+	return p.CsName
+}
+
+func (p *SwapCandidate) GetShiftId() (v int64) {
+	return p.ShiftId
+}
+
+func (p *SwapCandidate) GetShiftName() (v string) {
+	return p.ShiftName
+}
+
+func (p *SwapCandidate) GetShiftTime() (v string) {
+	return p.ShiftTime
+}
+
+func (p *SwapCandidate) GetHasPendingSwap() (v int8) {
+	return p.HasPendingSwap
+}
+func (p *SwapCandidate) SetCsId(val string) {
+	p.CsId = val
+}
+func (p *SwapCandidate) SetCsName(val string) {
+	p.CsName = val
+}
+func (p *SwapCandidate) SetShiftId(val int64) {
+	p.ShiftId = val
+}
+func (p *SwapCandidate) SetShiftName(val string) {
+	p.ShiftName = val
+}
+func (p *SwapCandidate) SetShiftTime(val string) {
+	p.ShiftTime = val
+}
+func (p *SwapCandidate) SetHasPendingSwap(val int8) {
+	p.HasPendingSwap = val
+}
+
+func (p *SwapCandidate) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("SwapCandidate(%+v)", *p)
+}
+
+var fieldIDToName_SwapCandidate = map[int16]string{
+	1: "cs_id",
+	2: "cs_name",
+	3: "shift_id",
+	4: "shift_name",
+	5: "shift_time",
+	6: "has_pending_swap",
+}
+
+type GetSwapCandidatesReq struct {
+	CsId       string `thrift:"cs_id,1" frugal:"1,default,string" json:"cs_id"`
+	TargetDate string `thrift:"target_date,2" frugal:"2,default,string" json:"target_date"`
+}
+
+func NewGetSwapCandidatesReq() *GetSwapCandidatesReq {
+	return &GetSwapCandidatesReq{}
+}
+
+func (p *GetSwapCandidatesReq) InitDefault() {
+}
+
+func (p *GetSwapCandidatesReq) GetCsId() (v string) {
+	return p.CsId
+}
+
+func (p *GetSwapCandidatesReq) GetTargetDate() (v string) {
+	return p.TargetDate
+}
+func (p *GetSwapCandidatesReq) SetCsId(val string) {
+	p.CsId = val
+}
+func (p *GetSwapCandidatesReq) SetTargetDate(val string) {
+	p.TargetDate = val
+}
+
+func (p *GetSwapCandidatesReq) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("GetSwapCandidatesReq(%+v)", *p)
+}
+
+var fieldIDToName_GetSwapCandidatesReq = map[int16]string{
+	1: "cs_id",
+	2: "target_date",
+}
+
+type GetSwapCandidatesResp struct {
+	BaseResp   *BaseResp        `thrift:"base_resp,1" frugal:"1,default,BaseResp" json:"base_resp"`
+	Candidates []*SwapCandidate `thrift:"candidates,2" frugal:"2,default,list<SwapCandidate>" json:"candidates"`
+}
+
+func NewGetSwapCandidatesResp() *GetSwapCandidatesResp {
+	return &GetSwapCandidatesResp{}
+}
+
+func (p *GetSwapCandidatesResp) InitDefault() {
+}
+
+var GetSwapCandidatesResp_BaseResp_DEFAULT *BaseResp
+
+func (p *GetSwapCandidatesResp) GetBaseResp() (v *BaseResp) {
+	if !p.IsSetBaseResp() {
+		return GetSwapCandidatesResp_BaseResp_DEFAULT
+	}
+	return p.BaseResp
+}
+
+func (p *GetSwapCandidatesResp) GetCandidates() (v []*SwapCandidate) {
+	return p.Candidates
+}
+func (p *GetSwapCandidatesResp) SetBaseResp(val *BaseResp) {
+	p.BaseResp = val
+}
+func (p *GetSwapCandidatesResp) SetCandidates(val []*SwapCandidate) {
+	p.Candidates = val
+}
+
+func (p *GetSwapCandidatesResp) IsSetBaseResp() bool {
+	return p.BaseResp != nil
+}
+
+func (p *GetSwapCandidatesResp) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("GetSwapCandidatesResp(%+v)", *p)
+}
+
+var fieldIDToName_GetSwapCandidatesResp = map[int16]string{
+	1: "base_resp",
+	2: "candidates",
+}
+
+type CheckSwapConflictReq struct {
+	InitiatorCsId string `thrift:"initiator_cs_id,1" frugal:"1,default,string" json:"initiator_cs_id"`
+	TargetCsId    string `thrift:"target_cs_id,2" frugal:"2,default,string" json:"target_cs_id"`
+	TargetDate    string `thrift:"target_date,3" frugal:"3,default,string" json:"target_date"`
+}
+
+func NewCheckSwapConflictReq() *CheckSwapConflictReq {
+	return &CheckSwapConflictReq{}
+}
+
+func (p *CheckSwapConflictReq) InitDefault() {
+}
+
+func (p *CheckSwapConflictReq) GetInitiatorCsId() (v string) {
+	return p.InitiatorCsId
+}
+
+func (p *CheckSwapConflictReq) GetTargetCsId() (v string) {
+	return p.TargetCsId
+}
+
+func (p *CheckSwapConflictReq) GetTargetDate() (v string) {
+	return p.TargetDate
+}
+func (p *CheckSwapConflictReq) SetInitiatorCsId(val string) {
+	p.InitiatorCsId = val
+}
+func (p *CheckSwapConflictReq) SetTargetCsId(val string) {
+	p.TargetCsId = val
+}
+func (p *CheckSwapConflictReq) SetTargetDate(val string) {
+	p.TargetDate = val
+}
+
+func (p *CheckSwapConflictReq) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CheckSwapConflictReq(%+v)", *p)
+}
+
+var fieldIDToName_CheckSwapConflictReq = map[int16]string{
+	1: "initiator_cs_id",
+	2: "target_cs_id",
+	3: "target_date",
+}
+
+type CheckSwapConflictResp struct {
+	BaseResp        *BaseResp `thrift:"base_resp,1" frugal:"1,default,BaseResp" json:"base_resp"`
+	HasConflict     bool      `thrift:"has_conflict,2" frugal:"2,default,bool" json:"has_conflict"`
+	ConflictMessage string    `thrift:"conflict_message,3" frugal:"3,default,string" json:"conflict_message"`
+	ConflictCsIds   []string  `thrift:"conflict_cs_ids,4" frugal:"4,default,list<string>" json:"conflict_cs_ids"`
+}
+
+func NewCheckSwapConflictResp() *CheckSwapConflictResp {
+	return &CheckSwapConflictResp{}
+}
+
+func (p *CheckSwapConflictResp) InitDefault() {
+}
+
+var CheckSwapConflictResp_BaseResp_DEFAULT *BaseResp
+
+func (p *CheckSwapConflictResp) GetBaseResp() (v *BaseResp) {
+	if !p.IsSetBaseResp() {
+		return CheckSwapConflictResp_BaseResp_DEFAULT
+	}
+	return p.BaseResp
+}
+
+func (p *CheckSwapConflictResp) GetHasConflict() (v bool) {
+	return p.HasConflict
+}
+
+func (p *CheckSwapConflictResp) GetConflictMessage() (v string) {
+	return p.ConflictMessage
+}
+
+func (p *CheckSwapConflictResp) GetConflictCsIds() (v []string) {
+	return p.ConflictCsIds
+}
+func (p *CheckSwapConflictResp) SetBaseResp(val *BaseResp) {
+	p.BaseResp = val
+}
+func (p *CheckSwapConflictResp) SetHasConflict(val bool) {
+	p.HasConflict = val
+}
+func (p *CheckSwapConflictResp) SetConflictMessage(val string) {
+	p.ConflictMessage = val
+}
+func (p *CheckSwapConflictResp) SetConflictCsIds(val []string) {
+	p.ConflictCsIds = val
+}
+
+func (p *CheckSwapConflictResp) IsSetBaseResp() bool {
+	return p.BaseResp != nil
+}
+
+func (p *CheckSwapConflictResp) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CheckSwapConflictResp(%+v)", *p)
+}
+
+var fieldIDToName_CheckSwapConflictResp = map[int16]string{
+	1: "base_resp",
+	2: "has_conflict",
+	3: "conflict_message",
+	4: "conflict_cs_ids",
+}
+
+type GetLeaveAuditLogReq struct {
+	ApplyId int64 `thrift:"apply_id,1,required" frugal:"1,required,i64" json:"apply_id"`
+}
+
+func NewGetLeaveAuditLogReq() *GetLeaveAuditLogReq {
+	return &GetLeaveAuditLogReq{}
+}
+
+func (p *GetLeaveAuditLogReq) InitDefault() {
+}
+
+func (p *GetLeaveAuditLogReq) GetApplyId() (v int64) {
+	return p.ApplyId
+}
+func (p *GetLeaveAuditLogReq) SetApplyId(val int64) {
+	p.ApplyId = val
+}
+
+func (p *GetLeaveAuditLogReq) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("GetLeaveAuditLogReq(%+v)", *p)
+}
+
+var fieldIDToName_GetLeaveAuditLogReq = map[int16]string{
+	1: "apply_id",
+}
+
+type GetLeaveAuditLogResp struct {
+	BaseResp *BaseResp       `thrift:"base_resp,1" frugal:"1,default,BaseResp" json:"base_resp"`
+	Logs     []*AuditLogItem `thrift:"logs,2" frugal:"2,default,list<AuditLogItem>" json:"logs"`
+}
+
+func NewGetLeaveAuditLogResp() *GetLeaveAuditLogResp {
+	return &GetLeaveAuditLogResp{}
+}
+
+func (p *GetLeaveAuditLogResp) InitDefault() {
+}
+
+var GetLeaveAuditLogResp_BaseResp_DEFAULT *BaseResp
+
+func (p *GetLeaveAuditLogResp) GetBaseResp() (v *BaseResp) {
+	if !p.IsSetBaseResp() {
+		return GetLeaveAuditLogResp_BaseResp_DEFAULT
+	}
+	return p.BaseResp
+}
+
+func (p *GetLeaveAuditLogResp) GetLogs() (v []*AuditLogItem) {
+	return p.Logs
+}
+func (p *GetLeaveAuditLogResp) SetBaseResp(val *BaseResp) {
+	p.BaseResp = val
+}
+func (p *GetLeaveAuditLogResp) SetLogs(val []*AuditLogItem) {
+	p.Logs = val
+}
+
+func (p *GetLeaveAuditLogResp) IsSetBaseResp() bool {
+	return p.BaseResp != nil
+}
+
+func (p *GetLeaveAuditLogResp) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("GetLeaveAuditLogResp(%+v)", *p)
+}
+
+var fieldIDToName_GetLeaveAuditLogResp = map[int16]string{
+	1: "base_resp",
+	2: "logs",
+}
+
 type CustomerService interface {
 	GetCustomerService(ctx context.Context, req *GetCustomerServiceReq) (r *GetCustomerServiceResp, err error)
 
@@ -6701,6 +8409,24 @@ type CustomerService interface {
 	GetLeaveTransfer(ctx context.Context, req *GetLeaveTransferReq) (r *GetLeaveTransferResp, err error)
 
 	ListLeaveTransfer(ctx context.Context, req *ListLeaveTransferReq) (r *ListLeaveTransferResp, err error)
+
+	GetLeaveAuditLog(ctx context.Context, req *GetLeaveAuditLogReq) (r *GetLeaveAuditLogResp, err error)
+
+	ApplyChainSwap(ctx context.Context, req *ApplyChainSwapReq) (r *ApplyChainSwapResp, err error)
+
+	ApproveChainSwap(ctx context.Context, req *ApproveChainSwapReq) (r *ApproveChainSwapResp, err error)
+
+	ListChainSwap(ctx context.Context, req *ListChainSwapReq) (r *ListChainSwapResp, err error)
+
+	GetChainSwap(ctx context.Context, req *GetChainSwapReq) (r *GetChainSwapResp, err error)
+
+	Heartbeat(ctx context.Context, req *HeartbeatReq) (r *HeartbeatResp, err error)
+
+	ListOnlineCustomers(ctx context.Context, req *ListOnlineCustomersReq) (r *ListOnlineCustomersResp, err error)
+
+	GetSwapCandidates(ctx context.Context, req *GetSwapCandidatesReq) (r *GetSwapCandidatesResp, err error)
+
+	CheckSwapConflict(ctx context.Context, req *CheckSwapConflictReq) (r *CheckSwapConflictResp, err error)
 
 	ListConversation(ctx context.Context, req *ListConversationReq) (r *ListConversationResp, err error)
 
@@ -6757,6 +8483,8 @@ type CustomerService interface {
 	GetCurrentUser(ctx context.Context, req *GetCurrentUserReq) (r *GetCurrentUserResp, err error)
 
 	Register(ctx context.Context, req *RegisterReq) (r *RegisterResp, err error)
+
+	Logout(ctx context.Context, req *LogoutReq) (r *LogoutResp, err error)
 
 	EncryptMessage(ctx context.Context, req *EncryptMessageReq) (r *EncryptMessageResp, err error)
 
@@ -8136,6 +9864,690 @@ func (p *CustomerServiceListLeaveTransferResult) String() string {
 }
 
 var fieldIDToName_CustomerServiceListLeaveTransferResult = map[int16]string{
+	0: "success",
+}
+
+type CustomerServiceGetLeaveAuditLogArgs struct {
+	Req *GetLeaveAuditLogReq `thrift:"req,1" frugal:"1,default,GetLeaveAuditLogReq" json:"req"`
+}
+
+func NewCustomerServiceGetLeaveAuditLogArgs() *CustomerServiceGetLeaveAuditLogArgs {
+	return &CustomerServiceGetLeaveAuditLogArgs{}
+}
+
+func (p *CustomerServiceGetLeaveAuditLogArgs) InitDefault() {
+}
+
+var CustomerServiceGetLeaveAuditLogArgs_Req_DEFAULT *GetLeaveAuditLogReq
+
+func (p *CustomerServiceGetLeaveAuditLogArgs) GetReq() (v *GetLeaveAuditLogReq) {
+	if !p.IsSetReq() {
+		return CustomerServiceGetLeaveAuditLogArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+func (p *CustomerServiceGetLeaveAuditLogArgs) SetReq(val *GetLeaveAuditLogReq) {
+	p.Req = val
+}
+
+func (p *CustomerServiceGetLeaveAuditLogArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *CustomerServiceGetLeaveAuditLogArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceGetLeaveAuditLogArgs(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceGetLeaveAuditLogArgs = map[int16]string{
+	1: "req",
+}
+
+type CustomerServiceGetLeaveAuditLogResult struct {
+	Success *GetLeaveAuditLogResp `thrift:"success,0,optional" frugal:"0,optional,GetLeaveAuditLogResp" json:"success,omitempty"`
+}
+
+func NewCustomerServiceGetLeaveAuditLogResult() *CustomerServiceGetLeaveAuditLogResult {
+	return &CustomerServiceGetLeaveAuditLogResult{}
+}
+
+func (p *CustomerServiceGetLeaveAuditLogResult) InitDefault() {
+}
+
+var CustomerServiceGetLeaveAuditLogResult_Success_DEFAULT *GetLeaveAuditLogResp
+
+func (p *CustomerServiceGetLeaveAuditLogResult) GetSuccess() (v *GetLeaveAuditLogResp) {
+	if !p.IsSetSuccess() {
+		return CustomerServiceGetLeaveAuditLogResult_Success_DEFAULT
+	}
+	return p.Success
+}
+func (p *CustomerServiceGetLeaveAuditLogResult) SetSuccess(x interface{}) {
+	p.Success = x.(*GetLeaveAuditLogResp)
+}
+
+func (p *CustomerServiceGetLeaveAuditLogResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *CustomerServiceGetLeaveAuditLogResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceGetLeaveAuditLogResult(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceGetLeaveAuditLogResult = map[int16]string{
+	0: "success",
+}
+
+type CustomerServiceApplyChainSwapArgs struct {
+	Req *ApplyChainSwapReq `thrift:"req,1" frugal:"1,default,ApplyChainSwapReq" json:"req"`
+}
+
+func NewCustomerServiceApplyChainSwapArgs() *CustomerServiceApplyChainSwapArgs {
+	return &CustomerServiceApplyChainSwapArgs{}
+}
+
+func (p *CustomerServiceApplyChainSwapArgs) InitDefault() {
+}
+
+var CustomerServiceApplyChainSwapArgs_Req_DEFAULT *ApplyChainSwapReq
+
+func (p *CustomerServiceApplyChainSwapArgs) GetReq() (v *ApplyChainSwapReq) {
+	if !p.IsSetReq() {
+		return CustomerServiceApplyChainSwapArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+func (p *CustomerServiceApplyChainSwapArgs) SetReq(val *ApplyChainSwapReq) {
+	p.Req = val
+}
+
+func (p *CustomerServiceApplyChainSwapArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *CustomerServiceApplyChainSwapArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceApplyChainSwapArgs(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceApplyChainSwapArgs = map[int16]string{
+	1: "req",
+}
+
+type CustomerServiceApplyChainSwapResult struct {
+	Success *ApplyChainSwapResp `thrift:"success,0,optional" frugal:"0,optional,ApplyChainSwapResp" json:"success,omitempty"`
+}
+
+func NewCustomerServiceApplyChainSwapResult() *CustomerServiceApplyChainSwapResult {
+	return &CustomerServiceApplyChainSwapResult{}
+}
+
+func (p *CustomerServiceApplyChainSwapResult) InitDefault() {
+}
+
+var CustomerServiceApplyChainSwapResult_Success_DEFAULT *ApplyChainSwapResp
+
+func (p *CustomerServiceApplyChainSwapResult) GetSuccess() (v *ApplyChainSwapResp) {
+	if !p.IsSetSuccess() {
+		return CustomerServiceApplyChainSwapResult_Success_DEFAULT
+	}
+	return p.Success
+}
+func (p *CustomerServiceApplyChainSwapResult) SetSuccess(x interface{}) {
+	p.Success = x.(*ApplyChainSwapResp)
+}
+
+func (p *CustomerServiceApplyChainSwapResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *CustomerServiceApplyChainSwapResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceApplyChainSwapResult(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceApplyChainSwapResult = map[int16]string{
+	0: "success",
+}
+
+type CustomerServiceApproveChainSwapArgs struct {
+	Req *ApproveChainSwapReq `thrift:"req,1" frugal:"1,default,ApproveChainSwapReq" json:"req"`
+}
+
+func NewCustomerServiceApproveChainSwapArgs() *CustomerServiceApproveChainSwapArgs {
+	return &CustomerServiceApproveChainSwapArgs{}
+}
+
+func (p *CustomerServiceApproveChainSwapArgs) InitDefault() {
+}
+
+var CustomerServiceApproveChainSwapArgs_Req_DEFAULT *ApproveChainSwapReq
+
+func (p *CustomerServiceApproveChainSwapArgs) GetReq() (v *ApproveChainSwapReq) {
+	if !p.IsSetReq() {
+		return CustomerServiceApproveChainSwapArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+func (p *CustomerServiceApproveChainSwapArgs) SetReq(val *ApproveChainSwapReq) {
+	p.Req = val
+}
+
+func (p *CustomerServiceApproveChainSwapArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *CustomerServiceApproveChainSwapArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceApproveChainSwapArgs(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceApproveChainSwapArgs = map[int16]string{
+	1: "req",
+}
+
+type CustomerServiceApproveChainSwapResult struct {
+	Success *ApproveChainSwapResp `thrift:"success,0,optional" frugal:"0,optional,ApproveChainSwapResp" json:"success,omitempty"`
+}
+
+func NewCustomerServiceApproveChainSwapResult() *CustomerServiceApproveChainSwapResult {
+	return &CustomerServiceApproveChainSwapResult{}
+}
+
+func (p *CustomerServiceApproveChainSwapResult) InitDefault() {
+}
+
+var CustomerServiceApproveChainSwapResult_Success_DEFAULT *ApproveChainSwapResp
+
+func (p *CustomerServiceApproveChainSwapResult) GetSuccess() (v *ApproveChainSwapResp) {
+	if !p.IsSetSuccess() {
+		return CustomerServiceApproveChainSwapResult_Success_DEFAULT
+	}
+	return p.Success
+}
+func (p *CustomerServiceApproveChainSwapResult) SetSuccess(x interface{}) {
+	p.Success = x.(*ApproveChainSwapResp)
+}
+
+func (p *CustomerServiceApproveChainSwapResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *CustomerServiceApproveChainSwapResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceApproveChainSwapResult(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceApproveChainSwapResult = map[int16]string{
+	0: "success",
+}
+
+type CustomerServiceListChainSwapArgs struct {
+	Req *ListChainSwapReq `thrift:"req,1" frugal:"1,default,ListChainSwapReq" json:"req"`
+}
+
+func NewCustomerServiceListChainSwapArgs() *CustomerServiceListChainSwapArgs {
+	return &CustomerServiceListChainSwapArgs{}
+}
+
+func (p *CustomerServiceListChainSwapArgs) InitDefault() {
+}
+
+var CustomerServiceListChainSwapArgs_Req_DEFAULT *ListChainSwapReq
+
+func (p *CustomerServiceListChainSwapArgs) GetReq() (v *ListChainSwapReq) {
+	if !p.IsSetReq() {
+		return CustomerServiceListChainSwapArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+func (p *CustomerServiceListChainSwapArgs) SetReq(val *ListChainSwapReq) {
+	p.Req = val
+}
+
+func (p *CustomerServiceListChainSwapArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *CustomerServiceListChainSwapArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceListChainSwapArgs(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceListChainSwapArgs = map[int16]string{
+	1: "req",
+}
+
+type CustomerServiceListChainSwapResult struct {
+	Success *ListChainSwapResp `thrift:"success,0,optional" frugal:"0,optional,ListChainSwapResp" json:"success,omitempty"`
+}
+
+func NewCustomerServiceListChainSwapResult() *CustomerServiceListChainSwapResult {
+	return &CustomerServiceListChainSwapResult{}
+}
+
+func (p *CustomerServiceListChainSwapResult) InitDefault() {
+}
+
+var CustomerServiceListChainSwapResult_Success_DEFAULT *ListChainSwapResp
+
+func (p *CustomerServiceListChainSwapResult) GetSuccess() (v *ListChainSwapResp) {
+	if !p.IsSetSuccess() {
+		return CustomerServiceListChainSwapResult_Success_DEFAULT
+	}
+	return p.Success
+}
+func (p *CustomerServiceListChainSwapResult) SetSuccess(x interface{}) {
+	p.Success = x.(*ListChainSwapResp)
+}
+
+func (p *CustomerServiceListChainSwapResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *CustomerServiceListChainSwapResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceListChainSwapResult(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceListChainSwapResult = map[int16]string{
+	0: "success",
+}
+
+type CustomerServiceGetChainSwapArgs struct {
+	Req *GetChainSwapReq `thrift:"req,1" frugal:"1,default,GetChainSwapReq" json:"req"`
+}
+
+func NewCustomerServiceGetChainSwapArgs() *CustomerServiceGetChainSwapArgs {
+	return &CustomerServiceGetChainSwapArgs{}
+}
+
+func (p *CustomerServiceGetChainSwapArgs) InitDefault() {
+}
+
+var CustomerServiceGetChainSwapArgs_Req_DEFAULT *GetChainSwapReq
+
+func (p *CustomerServiceGetChainSwapArgs) GetReq() (v *GetChainSwapReq) {
+	if !p.IsSetReq() {
+		return CustomerServiceGetChainSwapArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+func (p *CustomerServiceGetChainSwapArgs) SetReq(val *GetChainSwapReq) {
+	p.Req = val
+}
+
+func (p *CustomerServiceGetChainSwapArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *CustomerServiceGetChainSwapArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceGetChainSwapArgs(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceGetChainSwapArgs = map[int16]string{
+	1: "req",
+}
+
+type CustomerServiceGetChainSwapResult struct {
+	Success *GetChainSwapResp `thrift:"success,0,optional" frugal:"0,optional,GetChainSwapResp" json:"success,omitempty"`
+}
+
+func NewCustomerServiceGetChainSwapResult() *CustomerServiceGetChainSwapResult {
+	return &CustomerServiceGetChainSwapResult{}
+}
+
+func (p *CustomerServiceGetChainSwapResult) InitDefault() {
+}
+
+var CustomerServiceGetChainSwapResult_Success_DEFAULT *GetChainSwapResp
+
+func (p *CustomerServiceGetChainSwapResult) GetSuccess() (v *GetChainSwapResp) {
+	if !p.IsSetSuccess() {
+		return CustomerServiceGetChainSwapResult_Success_DEFAULT
+	}
+	return p.Success
+}
+func (p *CustomerServiceGetChainSwapResult) SetSuccess(x interface{}) {
+	p.Success = x.(*GetChainSwapResp)
+}
+
+func (p *CustomerServiceGetChainSwapResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *CustomerServiceGetChainSwapResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceGetChainSwapResult(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceGetChainSwapResult = map[int16]string{
+	0: "success",
+}
+
+type CustomerServiceHeartbeatArgs struct {
+	Req *HeartbeatReq `thrift:"req,1" frugal:"1,default,HeartbeatReq" json:"req"`
+}
+
+func NewCustomerServiceHeartbeatArgs() *CustomerServiceHeartbeatArgs {
+	return &CustomerServiceHeartbeatArgs{}
+}
+
+func (p *CustomerServiceHeartbeatArgs) InitDefault() {
+}
+
+var CustomerServiceHeartbeatArgs_Req_DEFAULT *HeartbeatReq
+
+func (p *CustomerServiceHeartbeatArgs) GetReq() (v *HeartbeatReq) {
+	if !p.IsSetReq() {
+		return CustomerServiceHeartbeatArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+func (p *CustomerServiceHeartbeatArgs) SetReq(val *HeartbeatReq) {
+	p.Req = val
+}
+
+func (p *CustomerServiceHeartbeatArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *CustomerServiceHeartbeatArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceHeartbeatArgs(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceHeartbeatArgs = map[int16]string{
+	1: "req",
+}
+
+type CustomerServiceHeartbeatResult struct {
+	Success *HeartbeatResp `thrift:"success,0,optional" frugal:"0,optional,HeartbeatResp" json:"success,omitempty"`
+}
+
+func NewCustomerServiceHeartbeatResult() *CustomerServiceHeartbeatResult {
+	return &CustomerServiceHeartbeatResult{}
+}
+
+func (p *CustomerServiceHeartbeatResult) InitDefault() {
+}
+
+var CustomerServiceHeartbeatResult_Success_DEFAULT *HeartbeatResp
+
+func (p *CustomerServiceHeartbeatResult) GetSuccess() (v *HeartbeatResp) {
+	if !p.IsSetSuccess() {
+		return CustomerServiceHeartbeatResult_Success_DEFAULT
+	}
+	return p.Success
+}
+func (p *CustomerServiceHeartbeatResult) SetSuccess(x interface{}) {
+	p.Success = x.(*HeartbeatResp)
+}
+
+func (p *CustomerServiceHeartbeatResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *CustomerServiceHeartbeatResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceHeartbeatResult(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceHeartbeatResult = map[int16]string{
+	0: "success",
+}
+
+type CustomerServiceListOnlineCustomersArgs struct {
+	Req *ListOnlineCustomersReq `thrift:"req,1" frugal:"1,default,ListOnlineCustomersReq" json:"req"`
+}
+
+func NewCustomerServiceListOnlineCustomersArgs() *CustomerServiceListOnlineCustomersArgs {
+	return &CustomerServiceListOnlineCustomersArgs{}
+}
+
+func (p *CustomerServiceListOnlineCustomersArgs) InitDefault() {
+}
+
+var CustomerServiceListOnlineCustomersArgs_Req_DEFAULT *ListOnlineCustomersReq
+
+func (p *CustomerServiceListOnlineCustomersArgs) GetReq() (v *ListOnlineCustomersReq) {
+	if !p.IsSetReq() {
+		return CustomerServiceListOnlineCustomersArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+func (p *CustomerServiceListOnlineCustomersArgs) SetReq(val *ListOnlineCustomersReq) {
+	p.Req = val
+}
+
+func (p *CustomerServiceListOnlineCustomersArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *CustomerServiceListOnlineCustomersArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceListOnlineCustomersArgs(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceListOnlineCustomersArgs = map[int16]string{
+	1: "req",
+}
+
+type CustomerServiceListOnlineCustomersResult struct {
+	Success *ListOnlineCustomersResp `thrift:"success,0,optional" frugal:"0,optional,ListOnlineCustomersResp" json:"success,omitempty"`
+}
+
+func NewCustomerServiceListOnlineCustomersResult() *CustomerServiceListOnlineCustomersResult {
+	return &CustomerServiceListOnlineCustomersResult{}
+}
+
+func (p *CustomerServiceListOnlineCustomersResult) InitDefault() {
+}
+
+var CustomerServiceListOnlineCustomersResult_Success_DEFAULT *ListOnlineCustomersResp
+
+func (p *CustomerServiceListOnlineCustomersResult) GetSuccess() (v *ListOnlineCustomersResp) {
+	if !p.IsSetSuccess() {
+		return CustomerServiceListOnlineCustomersResult_Success_DEFAULT
+	}
+	return p.Success
+}
+func (p *CustomerServiceListOnlineCustomersResult) SetSuccess(x interface{}) {
+	p.Success = x.(*ListOnlineCustomersResp)
+}
+
+func (p *CustomerServiceListOnlineCustomersResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *CustomerServiceListOnlineCustomersResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceListOnlineCustomersResult(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceListOnlineCustomersResult = map[int16]string{
+	0: "success",
+}
+
+type CustomerServiceGetSwapCandidatesArgs struct {
+	Req *GetSwapCandidatesReq `thrift:"req,1" frugal:"1,default,GetSwapCandidatesReq" json:"req"`
+}
+
+func NewCustomerServiceGetSwapCandidatesArgs() *CustomerServiceGetSwapCandidatesArgs {
+	return &CustomerServiceGetSwapCandidatesArgs{}
+}
+
+func (p *CustomerServiceGetSwapCandidatesArgs) InitDefault() {
+}
+
+var CustomerServiceGetSwapCandidatesArgs_Req_DEFAULT *GetSwapCandidatesReq
+
+func (p *CustomerServiceGetSwapCandidatesArgs) GetReq() (v *GetSwapCandidatesReq) {
+	if !p.IsSetReq() {
+		return CustomerServiceGetSwapCandidatesArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+func (p *CustomerServiceGetSwapCandidatesArgs) SetReq(val *GetSwapCandidatesReq) {
+	p.Req = val
+}
+
+func (p *CustomerServiceGetSwapCandidatesArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *CustomerServiceGetSwapCandidatesArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceGetSwapCandidatesArgs(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceGetSwapCandidatesArgs = map[int16]string{
+	1: "req",
+}
+
+type CustomerServiceGetSwapCandidatesResult struct {
+	Success *GetSwapCandidatesResp `thrift:"success,0,optional" frugal:"0,optional,GetSwapCandidatesResp" json:"success,omitempty"`
+}
+
+func NewCustomerServiceGetSwapCandidatesResult() *CustomerServiceGetSwapCandidatesResult {
+	return &CustomerServiceGetSwapCandidatesResult{}
+}
+
+func (p *CustomerServiceGetSwapCandidatesResult) InitDefault() {
+}
+
+var CustomerServiceGetSwapCandidatesResult_Success_DEFAULT *GetSwapCandidatesResp
+
+func (p *CustomerServiceGetSwapCandidatesResult) GetSuccess() (v *GetSwapCandidatesResp) {
+	if !p.IsSetSuccess() {
+		return CustomerServiceGetSwapCandidatesResult_Success_DEFAULT
+	}
+	return p.Success
+}
+func (p *CustomerServiceGetSwapCandidatesResult) SetSuccess(x interface{}) {
+	p.Success = x.(*GetSwapCandidatesResp)
+}
+
+func (p *CustomerServiceGetSwapCandidatesResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *CustomerServiceGetSwapCandidatesResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceGetSwapCandidatesResult(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceGetSwapCandidatesResult = map[int16]string{
+	0: "success",
+}
+
+type CustomerServiceCheckSwapConflictArgs struct {
+	Req *CheckSwapConflictReq `thrift:"req,1" frugal:"1,default,CheckSwapConflictReq" json:"req"`
+}
+
+func NewCustomerServiceCheckSwapConflictArgs() *CustomerServiceCheckSwapConflictArgs {
+	return &CustomerServiceCheckSwapConflictArgs{}
+}
+
+func (p *CustomerServiceCheckSwapConflictArgs) InitDefault() {
+}
+
+var CustomerServiceCheckSwapConflictArgs_Req_DEFAULT *CheckSwapConflictReq
+
+func (p *CustomerServiceCheckSwapConflictArgs) GetReq() (v *CheckSwapConflictReq) {
+	if !p.IsSetReq() {
+		return CustomerServiceCheckSwapConflictArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+func (p *CustomerServiceCheckSwapConflictArgs) SetReq(val *CheckSwapConflictReq) {
+	p.Req = val
+}
+
+func (p *CustomerServiceCheckSwapConflictArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *CustomerServiceCheckSwapConflictArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceCheckSwapConflictArgs(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceCheckSwapConflictArgs = map[int16]string{
+	1: "req",
+}
+
+type CustomerServiceCheckSwapConflictResult struct {
+	Success *CheckSwapConflictResp `thrift:"success,0,optional" frugal:"0,optional,CheckSwapConflictResp" json:"success,omitempty"`
+}
+
+func NewCustomerServiceCheckSwapConflictResult() *CustomerServiceCheckSwapConflictResult {
+	return &CustomerServiceCheckSwapConflictResult{}
+}
+
+func (p *CustomerServiceCheckSwapConflictResult) InitDefault() {
+}
+
+var CustomerServiceCheckSwapConflictResult_Success_DEFAULT *CheckSwapConflictResp
+
+func (p *CustomerServiceCheckSwapConflictResult) GetSuccess() (v *CheckSwapConflictResp) {
+	if !p.IsSetSuccess() {
+		return CustomerServiceCheckSwapConflictResult_Success_DEFAULT
+	}
+	return p.Success
+}
+func (p *CustomerServiceCheckSwapConflictResult) SetSuccess(x interface{}) {
+	p.Success = x.(*CheckSwapConflictResp)
+}
+
+func (p *CustomerServiceCheckSwapConflictResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *CustomerServiceCheckSwapConflictResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceCheckSwapConflictResult(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceCheckSwapConflictResult = map[int16]string{
 	0: "success",
 }
 
@@ -10264,6 +12676,82 @@ func (p *CustomerServiceRegisterResult) String() string {
 }
 
 var fieldIDToName_CustomerServiceRegisterResult = map[int16]string{
+	0: "success",
+}
+
+type CustomerServiceLogoutArgs struct {
+	Req *LogoutReq `thrift:"req,1" frugal:"1,default,LogoutReq" json:"req"`
+}
+
+func NewCustomerServiceLogoutArgs() *CustomerServiceLogoutArgs {
+	return &CustomerServiceLogoutArgs{}
+}
+
+func (p *CustomerServiceLogoutArgs) InitDefault() {
+}
+
+var CustomerServiceLogoutArgs_Req_DEFAULT *LogoutReq
+
+func (p *CustomerServiceLogoutArgs) GetReq() (v *LogoutReq) {
+	if !p.IsSetReq() {
+		return CustomerServiceLogoutArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+func (p *CustomerServiceLogoutArgs) SetReq(val *LogoutReq) {
+	p.Req = val
+}
+
+func (p *CustomerServiceLogoutArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *CustomerServiceLogoutArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceLogoutArgs(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceLogoutArgs = map[int16]string{
+	1: "req",
+}
+
+type CustomerServiceLogoutResult struct {
+	Success *LogoutResp `thrift:"success,0,optional" frugal:"0,optional,LogoutResp" json:"success,omitempty"`
+}
+
+func NewCustomerServiceLogoutResult() *CustomerServiceLogoutResult {
+	return &CustomerServiceLogoutResult{}
+}
+
+func (p *CustomerServiceLogoutResult) InitDefault() {
+}
+
+var CustomerServiceLogoutResult_Success_DEFAULT *LogoutResp
+
+func (p *CustomerServiceLogoutResult) GetSuccess() (v *LogoutResp) {
+	if !p.IsSetSuccess() {
+		return CustomerServiceLogoutResult_Success_DEFAULT
+	}
+	return p.Success
+}
+func (p *CustomerServiceLogoutResult) SetSuccess(x interface{}) {
+	p.Success = x.(*LogoutResp)
+}
+
+func (p *CustomerServiceLogoutResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *CustomerServiceLogoutResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CustomerServiceLogoutResult(%+v)", *p)
+}
+
+var fieldIDToName_CustomerServiceLogoutResult = map[int16]string{
 	0: "success",
 }
 

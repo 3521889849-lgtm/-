@@ -49,7 +49,10 @@
 					</view>
 
 					<view v-else class="detail-card">
-						<text class="detail-title">申请详情</text>
+						<view class="detail-header">
+							<text class="detail-title">申请详情</text>
+							<button class="audit-log-btn" @click="loadAuditLog">查看审计日志</button>
+						</view>
 
 						<view class="kv">
 							<text class="k">申请ID</text>
@@ -61,7 +64,7 @@
 						</view>
 						<view class="kv">
 							<text class="k">日期/班次</text>
-							<text class="v">{{ detail.target_date }} · {{ detail.shift_name || ('班次' + detail.shift_id) }}</text>
+							<text class="v">{{ formatDateRange(detail) }} · {{ detail.shift_name || ('班次' + detail.shift_id) }}</text>
 						</view>
 						<view class="kv">
 							<text class="k">申请人</text>
@@ -88,16 +91,45 @@
 							<text class="v">{{ statusText(detail.approval_status) }}</text>
 						</view>
 						<view class="kv" v-if="detail.approval_status !== 0">
-							<text class="k">审批人/时间</text>
-							<text class="v">{{ (detail.approver_id || '-') + ' · ' + (detail.approval_time || '-') }}</text>
+							<text class="k">审批人</text>
+							<text class="v">{{ detail.approver_name || detail.approver_id || '-' }}</text>
+						</view>
+						<view class="kv" v-if="detail.approval_status !== 0">
+							<text class="k">审批时间</text>
+							<text class="v">{{ detail.approval_time || '-' }}</text>
+						</view>
+						<view class="kv" v-if="detail.approval_status !== 0 && detail.approval_remark">
+							<text class="k">审批备注</text>
+							<text class="v">{{ detail.approval_remark }}</text>
+						</view>
+
+						<view class="divider"></view>
+
+						<!-- 审计日志展示区域 -->
+						<view v-if="auditLogs.length > 0" class="audit-log-section">
+							<text class="detail-title">审计日志</text>
+							<view class="audit-timeline">
+								<view v-for="(log, idx) in auditLogs" :key="idx" class="audit-item">
+									<view class="audit-dot" :class="getAuditDotClass(log.action)"></view>
+									<view class="audit-content">
+										<view class="audit-header">
+											<text class="audit-action">{{ getAuditActionText(log.action) }}</text>
+											<text class="audit-time">{{ log.create_time }}</text>
+										</view>
+										<text class="audit-operator">操作人: {{ log.operator_name || log.operator_id }}</text>
+										<text v-if="log.remark" class="audit-remark">备注: {{ log.remark }}</text>
+										<text v-if="log.details" class="audit-details">{{ log.details }}</text>
+									</view>
+								</view>
+							</view>
 						</view>
 
 						<view class="divider"></view>
 
 						<text class="detail-title">执行审批</text>
 						<view class="field">
-							<text class="form-label">审批人ID</text>
-							<input class="apple-input" v-model="approve.approver_id" placeholder="例如：ADMIN" />
+							<text class="form-label">审批备注（可选）</text>
+							<input class="apple-input" v-model="approve.approval_remark" placeholder="填写审批意见或备注" />
 						</view>
 						<view class="field">
 							<text class="form-label">审批结果</text>
@@ -132,8 +164,9 @@
 				detail: null,
 				approveStatusIndex: 0,
 				approve: {
-					approver_id: ''
-				}
+					approval_remark: ''
+				},
+				auditLogs: [] // 审计日志数据
 			}
 		},
 		mounted() {
@@ -163,6 +196,30 @@
 			},
 			setApproveStatus(index) {
 				this.approveStatusIndex = index
+			},
+			// 格式化日期范围显示
+			formatDateRange(item) {
+				if (!item) return '-'
+				// 如果有start_date和end_date，显示范围
+				if (item.start_date && item.end_date) {
+					const periodText = (p) => {
+						if (p === 0) return '全天'
+						if (p === 1) return '上午'
+						if (p === 2) return '下午'
+						return ''
+					}
+					if (item.start_date === item.end_date) {
+						// 同一天
+						if (item.start_period === 0) {
+							return item.start_date + ' 全天'
+						}
+						return item.start_date + ' ' + periodText(item.start_period)
+					}
+					// 不同天
+					return item.start_date + periodText(item.start_period) + ' ~ ' + item.end_date + periodText(item.end_period)
+				}
+				// 兼容旧数据：只有target_date
+				return item.target_date || '-'
 			},
 			async loadList() {
 				try {
@@ -196,6 +253,7 @@
 				if (!it || !it.apply_id) return
 				this.selectedApplyId = it.apply_id
 				this.detail = null
+				this.auditLogs = [] // 清空审计日志
 
 				try {
 					uni.showLoading({ title: '加载详情' })
@@ -212,6 +270,52 @@
 					})
 				}
 			},
+			// 加载审计日志
+			async loadAuditLog() {
+				if (!this.detail || !this.detail.apply_id) {
+					uni.showToast({ title: '请先选择申请', icon: 'none' })
+					return
+				}
+
+				try {
+					uni.showLoading({ title: '加载中' })
+					const res = await api.getLeaveAuditLog(this.detail.apply_id)
+					uni.hideLoading()
+					ensureOk(res)
+					this.auditLogs = res.logs || []
+					if (this.auditLogs.length === 0) {
+						uni.showToast({ title: '暂无审计日志', icon: 'none' })
+					} else {
+						uni.showToast({ title: `加载了 ${this.auditLogs.length} 条记录` })
+					}
+				} catch (e) {
+					uni.hideLoading()
+					uni.showModal({
+						title: '加载审计日志失败',
+						content: e.errMsg || '未知错误',
+						showCancel: false
+					})
+				}
+			},
+			// 获取审计动作文本
+			getAuditActionText(action) {
+				const map = {
+					'CREATE': '📝 创建申请',
+					'SUBMIT': '🚀 提交申请',
+					'APPROVE': '✅ 审批通过',
+					'REJECT': '❌ 审批拒绝',
+					'CANCEL': '🚫 取消申请',
+					'UPDATE': '✏️ 修改申请'
+				}
+				return map[action] || action
+			},
+			// 获取审计点样式
+			getAuditDotClass(action) {
+				if (action === 'APPROVE') return 'dot-success'
+				if (action === 'REJECT') return 'dot-error'
+				if (action === 'CANCEL') return 'dot-warning'
+				return 'dot-default'
+			},
 			async submitApprove() {
 				if (!this.detail || !this.detail.apply_id) {
 					uni.showToast({ title: '请先选择申请', icon: 'none' })
@@ -222,19 +326,16 @@
 					return
 				}
 
-				const approverId = (this.approve.approver_id || '').trim()
+				const approvalRemark = (this.approve.approval_remark || '').trim()
 				const status = this.approveStatusIndex + 1
-				if (!approverId) {
-					uni.showToast({ title: '请输入审批人ID', icon: 'none' })
-					return
-				}
 
 				try {
 					uni.showLoading({ title: '处理中' })
+					// 后端会自动从 token 获取审批人信息
 					const res = await api.approveLeaveTransfer({
 						apply_id: this.detail.apply_id,
 						approval_status: status,
-						approver_id: approverId
+						approval_remark: approvalRemark
 					})
 					uni.hideLoading()
 
@@ -409,11 +510,119 @@
 		padding: 14px;
 	}
 
-	.detail-title {
-		font-size: 15px;
+	.detail-header {
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 10px;
+	}
+
+	.audit-log-btn {
+		height: 32px;
+		line-height: 32px;
+		padding: 0 12px;
+		background-color: #f5f5f7;
+		color: #0071e3;
+		border-radius: 8px;
+		font-size: 13px;
+		font-weight: 500;
+	}
+
+	.audit-log-btn:active {
+		background-color: #e5e5e7;
+	}
+
+	/* 审计日志区域 */
+	.audit-log-section {
+		margin-top: 12px;
+	}
+
+	.audit-timeline {
+		padding-left: 12px;
+		margin-top: 10px;
+	}
+
+	.audit-item {
+		flex-direction: row;
+		margin-bottom: 16px;
+		position: relative;
+	}
+
+	.audit-item:last-child {
+		margin-bottom: 0;
+	}
+
+	.audit-dot {
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		margin-right: 10px;
+		margin-top: 4px;
+		flex-shrink: 0;
+	}
+
+	.dot-default {
+		background-color: #86868b;
+	}
+
+	.dot-success {
+		background-color: #34c759;
+		box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.1);
+	}
+
+	.dot-error {
+		background-color: #ff3b30;
+		box-shadow: 0 0 0 4px rgba(255, 59, 48, 0.1);
+	}
+
+	.dot-warning {
+		background-color: #ffcc00;
+		box-shadow: 0 0 0 4px rgba(255, 204, 0, 0.1);
+	}
+
+	.audit-content {
+		flex: 1;
+		background-color: #f8f9fa;
+		border-radius: 8px;
+		padding: 10px;
+	}
+
+	.audit-header {
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 6px;
+	}
+
+	.audit-action {
+		font-size: 14px;
 		font-weight: 600;
 		color: #1d1d1f;
-		margin-bottom: 10px;
+	}
+
+	.audit-time {
+		font-size: 12px;
+		color: #86868b;
+	}
+
+	.audit-operator {
+		font-size: 13px;
+		color: #6b7280;
+		margin-bottom: 4px;
+	}
+
+	.audit-remark {
+		font-size: 13px;
+		color: #1d1d1f;
+		margin-top: 4px;
+		line-height: 18px;
+	}
+
+	.audit-details {
+		font-size: 12px;
+		color: #86868b;
+		margin-top: 4px;
+		line-height: 16px;
 	}
 
 	.kv {

@@ -67,8 +67,10 @@ func main() {
 	// 设置路由
 	mux := router.SetupRoutes(customerHandler, hub)
 
-	// 应用中间件：TraceID -> CORS
+	// 应用中间件：TraceID -> Auth (选择性) -> CORS
+	// 注意：中间件按逆序包装，所以执行顺序是 CORS -> Auth -> TraceID -> Handler
 	httpHandler := middleware.TraceMiddleware(mux)
+	httpHandler = withSelectiveAuth(httpHandler) // 选择性认证中间件
 	httpHandler = withCORS(httpHandler)
 
 	// 启动 HTTP 服务器
@@ -116,6 +118,44 @@ func withCORS(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(w, r)
+	})
+}
+
+// withSelectiveAuth 选择性认证中间件
+// 对公共接口（登录、注册、健康检查等）跳过认证
+// 对其他接口应用 AuthMiddleware 进行 JWT 验证
+// 参数:
+//   - next: 下一个HTTP处理器
+//
+// 返回: 包装后的HTTP处理器
+func withSelectiveAuth(next http.Handler) http.Handler {
+	// 公共路径列表（不需要登录认证）
+	publicPaths := []string{
+		"/api/v1/user/login",    // 登录
+		"/api/v1/user/register", // 注册
+		"/api/v1/user/logout",   // 退出（可选，有些系统需要token才能退出）
+		"/health",               // 健康检查
+		"/ws",                   // WebSocket（自己处理token验证）
+		"/api/stats/online",     // 在线状态统计
+	}
+
+	// 用 AuthMiddleware 包装
+	authHandler := middleware.AuthMiddleware(next)
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+
+		// 检查是否为公共路径
+		for _, p := range publicPaths {
+			if path == p {
+				// 公共路径，跳过认证，直接传递给下一个处理器
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+
+		// 非公共路径，应用认证中间件
+		authHandler.ServeHTTP(w, r)
 	})
 }
 

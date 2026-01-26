@@ -13,6 +13,9 @@ struct CustomerAgent {
     5: string skill_tags
     6: i8 status
     7: i8 current_status
+    8: i8 is_online          // 在线状态: 0=离线, 1=在线
+    9: string last_heartbeat  // 最后心跳时间
+    10: i8 role               // 角色: 0=客服, 1=部门经理, 2=管理员
 }
 
 struct GetCustomerServiceReq {
@@ -108,6 +111,7 @@ struct ListScheduleGridReq {
     2: string end_date
     3: string dept_id
     4: string team_id
+    5: string cs_id
 }
 
 struct ListScheduleGridResp {
@@ -212,10 +216,16 @@ struct TransferConversationResp {
 struct ApplyLeaveTransferReq {
     1: string cs_id
     2: i8 apply_type
-    3: string target_date
+    3: string target_date       // 兼容旧字段
     4: i64 shift_id
     5: string target_cs_id
     6: string reason
+    7: string start_date        // 开始日期（新增）
+    8: string end_date          // 结束日期（新增）
+    9: i8 start_period          // 开始时段: 0=全天, 1=上午, 2=下午
+    10: i8 end_period           // 结束时段
+    11: i8 leave_type           // 请假类型: 0=事假, 1=病假, 2=年假, 3=调休, 4=其他
+    12: string attachments      // 附件URL列表(JSON数组)
 }
 
 struct ApplyLeaveTransferResp {
@@ -227,6 +237,8 @@ struct ApproveLeaveTransferReq {
     1: i64 apply_id
     2: i8 approval_status
     3: string approver_id
+    4: string approver_name     // 审批人姓名（新增）
+    5: string approval_remark   // 审批备注（新增）
 }
 
 struct ApproveLeaveTransferResp {
@@ -250,6 +262,133 @@ struct LeaveTransferItem {
     14: string approval_time
     15: string reason
     16: string create_time
+    17: string start_date       // 开始日期（新增）
+    18: string end_date         // 结束日期（新增）
+    19: i8 start_period         // 开始时段（新增）
+    20: i8 end_period           // 结束时段（新增）
+    21: string approver_name    // 审批人姓名（新增）
+    22: string approval_remark  // 审批备注（新增）
+    23: string target_shift_name // 对方班次名称（调班时显示）
+    24: string target_shift_time // 对方班次时间（调班时显示）
+    25: string approver_role    // 审批人角色
+    26: list<AuditLogItem> audit_logs // 审批链路记录
+    27: i8 leave_type           // 请假类型: 0=事假, 1=病假, 2=年假, 3=调休, 4=其他
+    28: string attachments      // 附件URL列表(JSON数组)
+}
+
+struct AuditLogItem {
+    1: i64 log_id
+    2: i64 apply_id
+    3: string action
+    4: string operator_id
+    5: string operator_name
+    6: string operator_role
+    7: string remark
+    8: string create_time
+}
+
+struct ChainSwapItem {
+    1: string cs_id
+    2: i64 from_schedule_id
+    3: i64 to_schedule_id
+    4: i32 step
+}
+
+struct ApplyChainSwapReq {
+    1: string applicant_id
+    2: string dept_id
+    3: string reason
+    4: list<ChainSwapItem> items
+}
+
+struct ApplyChainSwapResp {
+    1: BaseResp base_resp
+    2: i64 request_id
+}
+
+struct ApproveChainSwapReq {
+    1: i64 request_id
+    2: i8 approval_status
+    3: string approver_id
+    4: string approver_name
+    5: string approval_remark
+}
+
+struct ApproveChainSwapResp {
+    1: BaseResp base_resp
+}
+
+// ============ 链式调班查询 ============
+
+// ListChainSwapReq 查询链式调班列表请求
+struct ListChainSwapReq {
+    1: i8 status              // 状态筛选: -1=全部, 0=待审批, 1=已通过, 2=已拒绝
+    2: string keyword         // 关键词搜索
+    3: i32 page
+    4: i32 page_size
+}
+
+// ChainSwapListItem 链式调班列表项
+struct ChainSwapListItem {
+    1: i64 swap_id
+    2: string applicant_id
+    3: string applicant_name
+    4: string dept_id
+    5: string reason
+    6: i8 status                // 0=待审批, 1=已通过, 2=已拒绝, 3=已取消
+    7: i32 items_count          // 调班链路步骤数
+    8: string create_time
+    9: string approver_id
+    10: string approver_name
+    11: string approved_at
+    12: string approve_comment
+}
+
+// ListChainSwapResp 链式调班列表响应
+struct ListChainSwapResp {
+    1: BaseResp base_resp
+    2: list<ChainSwapListItem> items
+    3: i64 total
+}
+
+// GetChainSwapReq 获取链式调班详情请求
+struct GetChainSwapReq {
+    1: i64 swap_id
+}
+
+// ChainSwapDetailItem 链式调班详情步骤
+struct ChainSwapDetailItem {
+    1: string cs_id
+    2: string cs_name
+    3: i64 from_schedule_id
+    4: string from_shift_name
+    5: i64 to_schedule_id
+    6: string to_shift_name
+    7: i32 step
+    8: i8 conflict_flag         // 0=无冲突, 1=有冲突
+    9: string conflict_reason
+}
+
+// ChainSwapDetail 链式调班详情
+struct ChainSwapDetail {
+    1: i64 swap_id
+    2: string applicant_id
+    3: string applicant_name
+    4: string dept_id
+    5: string reason
+    6: i8 status
+    7: string create_time
+    8: string approver_id
+    9: string approver_name
+    10: string approved_at
+    11: string approve_comment
+    12: list<ChainSwapDetailItem> items
+}
+
+// GetChainSwapResp 链式调班详情响应
+struct GetChainSwapResp {
+    1: BaseResp base_resp
+    2: ChainSwapDetail item
 }
 
 struct GetLeaveTransferReq {
@@ -266,6 +405,7 @@ struct ListLeaveTransferReq {
     2: string keyword
     3: i32 page
     4: i32 page_size
+    5: string operator_id
 }
 
 struct ListLeaveTransferResp {
@@ -756,6 +896,16 @@ struct RegisterResp {
     2: i64 user_id           // 新用户ID
 }
 
+// LogoutReq 退出登录请求
+struct LogoutReq {
+    1: string cs_id          // 客服ID
+}
+
+// LogoutResp 退出登录响应
+struct LogoutResp {
+    1: BaseResp base_resp
+}
+
 // ============ 消息加密与脱敏 ============
 
 struct EncryptMessageReq {
@@ -840,6 +990,82 @@ struct QueryArchivedConversationResp {
     3: i64 total
 }
 
+// ============ 心跳与在线状态 ============
+
+// HeartbeatReq 客服心跳请求（保持在线状态）
+struct HeartbeatReq {
+    1: string cs_id               // 客服ID
+}
+
+// HeartbeatResp 心跳响应
+struct HeartbeatResp {
+    1: BaseResp base_resp
+    2: i8 online_status           // 在线状态确认: 1=在线
+}
+
+// ListOnlineCustomersReq 获取在线客服列表请求
+struct ListOnlineCustomersReq {
+    1: string dept_id             // 部门筛选（可选）
+}
+
+// ListOnlineCustomersResp 在线客服列表响应
+struct ListOnlineCustomersResp {
+    1: BaseResp base_resp
+    2: list<CustomerAgent> customers // 在线客服列表
+    3: i64 total                     // 在线总数
+}
+
+// ============ 调班候选人与冲突检测 ============
+
+// SwapCandidate 可调班候选人（含班次信息）
+struct SwapCandidate {
+    1: string cs_id               // 客服ID
+    2: string cs_name             // 客服姓名
+    3: i64 shift_id               // 当前班次ID
+    4: string shift_name          // 班次名称
+    5: string shift_time          // 班次时间（如 08:00-12:00）
+    6: i8 has_pending_swap        // 是否有待处理的调班申请: 0=无, 1=有
+}
+
+// GetSwapCandidatesReq 获取调班候选人请求
+struct GetSwapCandidatesReq {
+    1: string cs_id               // 发起人客服ID
+    2: string target_date         // 调班日期
+}
+
+// GetSwapCandidatesResp 调班候选人响应
+struct GetSwapCandidatesResp {
+    1: BaseResp base_resp
+    2: list<SwapCandidate> candidates // 可调班候选人列表
+}
+
+// CheckSwapConflictReq 检测调班冲突请求
+struct CheckSwapConflictReq {
+    1: string initiator_cs_id     // 发起人客服ID
+    2: string target_cs_id        // 目标客服ID
+    3: string target_date         // 调班日期
+}
+
+// CheckSwapConflictResp 冲突检测响应
+struct CheckSwapConflictResp {
+    1: BaseResp base_resp
+    2: bool has_conflict          // 是否存在冲突
+    3: string conflict_message    // 冲突描述
+    4: list<string> conflict_cs_ids // 涉及冲突的客服ID列表
+}
+
+// GetLeaveAuditLogReq 获取请假审计日志请求
+struct GetLeaveAuditLogReq {
+    1: required i64 apply_id      // 申请单ID
+}
+
+// GetLeaveAuditLogResp 获取请假审计日志响应
+struct GetLeaveAuditLogResp {
+    1: BaseResp base_resp
+    2: list<AuditLogItem> logs    // 审计日志列表
+}
+
+
 service CustomerService {
     // ============ 客服管理 ============
     // GetCustomerService 获取单个客服详细信息
@@ -888,6 +1114,29 @@ service CustomerService {
     GetLeaveTransferResp GetLeaveTransfer(1: GetLeaveTransferReq req)
     // ListLeaveTransfer 查询申请记录列表
     ListLeaveTransferResp ListLeaveTransfer(1: ListLeaveTransferReq req)
+    // GetLeaveAuditLog 获取请假/调班申请的审计日志
+    GetLeaveAuditLogResp GetLeaveAuditLog(1: GetLeaveAuditLogReq req)
+    
+    // ApplyChainSwap 提交链式调班申请
+    ApplyChainSwapResp ApplyChainSwap(1: ApplyChainSwapReq req)
+    // ApproveChainSwap 审批链式调班申请
+    ApproveChainSwapResp ApproveChainSwap(1: ApproveChainSwapReq req)
+    // ListChainSwap 查询链式调班申请列表
+    ListChainSwapResp ListChainSwap(1: ListChainSwapReq req)
+    // GetChainSwap 获取链式调班申请详情
+    GetChainSwapResp GetChainSwap(1: GetChainSwapReq req)
+    
+    // ============ 心跳与在线状态 ============
+    // Heartbeat 客服心跳上报（保持在线状态）
+    HeartbeatResp Heartbeat(1: HeartbeatReq req)
+    // ListOnlineCustomers 获取当前在线的客服列表
+    ListOnlineCustomersResp ListOnlineCustomers(1: ListOnlineCustomersReq req)
+    
+    // ============ 调班辅助 ============
+    // GetSwapCandidates 获取可调班对象（含对方班次信息）
+    GetSwapCandidatesResp GetSwapCandidates(1: GetSwapCandidatesReq req)
+    // CheckSwapConflict 检测多人调班是否存在冲突
+    CheckSwapConflictResp CheckSwapConflict(1: CheckSwapConflictReq req)
 
     // ============ 会话查询与消息 ============
     // ListConversation 查询客服当前进行中的会话列表
@@ -960,6 +1209,8 @@ service CustomerService {
     GetCurrentUserResp GetCurrentUser(1: GetCurrentUserReq req)
     // Register 注册新用户（仅限客服角色）
     RegisterResp Register(1: RegisterReq req)
+    // Logout 用户退出登录（置offline状态）
+    LogoutResp Logout(1: LogoutReq req)
     
     // ============ 安全与加密 ============
     // EncryptMessage 加密敏感消息内容

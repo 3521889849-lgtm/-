@@ -29,6 +29,15 @@ type Client interface {
 	ApproveLeaveTransfer(ctx context.Context, req *customer.ApproveLeaveTransferReq, callOptions ...callopt.Option) (r *customer.ApproveLeaveTransferResp, err error)
 	GetLeaveTransfer(ctx context.Context, req *customer.GetLeaveTransferReq, callOptions ...callopt.Option) (r *customer.GetLeaveTransferResp, err error)
 	ListLeaveTransfer(ctx context.Context, req *customer.ListLeaveTransferReq, callOptions ...callopt.Option) (r *customer.ListLeaveTransferResp, err error)
+	GetLeaveAuditLog(ctx context.Context, req *customer.GetLeaveAuditLogReq, callOptions ...callopt.Option) (r *customer.GetLeaveAuditLogResp, err error)
+	ApplyChainSwap(ctx context.Context, req *customer.ApplyChainSwapReq, callOptions ...callopt.Option) (r *customer.ApplyChainSwapResp, err error)
+	ApproveChainSwap(ctx context.Context, req *customer.ApproveChainSwapReq, callOptions ...callopt.Option) (r *customer.ApproveChainSwapResp, err error)
+	ListChainSwap(ctx context.Context, req *customer.ListChainSwapReq, callOptions ...callopt.Option) (r *customer.ListChainSwapResp, err error)
+	GetChainSwap(ctx context.Context, req *customer.GetChainSwapReq, callOptions ...callopt.Option) (r *customer.GetChainSwapResp, err error)
+	Heartbeat(ctx context.Context, req *customer.HeartbeatReq, callOptions ...callopt.Option) (r *customer.HeartbeatResp, err error)
+	ListOnlineCustomers(ctx context.Context, req *customer.ListOnlineCustomersReq, callOptions ...callopt.Option) (r *customer.ListOnlineCustomersResp, err error)
+	GetSwapCandidates(ctx context.Context, req *customer.GetSwapCandidatesReq, callOptions ...callopt.Option) (r *customer.GetSwapCandidatesResp, err error)
+	CheckSwapConflict(ctx context.Context, req *customer.CheckSwapConflictReq, callOptions ...callopt.Option) (r *customer.CheckSwapConflictResp, err error)
 	ListConversation(ctx context.Context, req *customer.ListConversationReq, callOptions ...callopt.Option) (r *customer.ListConversationResp, err error)
 	ListConversationHistory(ctx context.Context, req *customer.ListConversationHistoryReq, callOptions ...callopt.Option) (r *customer.ListConversationResp, err error)
 	ListConversationMessage(ctx context.Context, req *customer.ListConversationMessageReq, callOptions ...callopt.Option) (r *customer.ListConversationMessageResp, err error)
@@ -57,6 +66,7 @@ type Client interface {
 	Login(ctx context.Context, req *customer.LoginReq, callOptions ...callopt.Option) (r *customer.LoginResp, err error)
 	GetCurrentUser(ctx context.Context, req *customer.GetCurrentUserReq, callOptions ...callopt.Option) (r *customer.GetCurrentUserResp, err error)
 	Register(ctx context.Context, req *customer.RegisterReq, callOptions ...callopt.Option) (r *customer.RegisterResp, err error)
+	Logout(ctx context.Context, req *customer.LogoutReq, callOptions ...callopt.Option) (r *customer.LogoutResp, err error)
 	EncryptMessage(ctx context.Context, req *customer.EncryptMessageReq, callOptions ...callopt.Option) (r *customer.EncryptMessageResp, err error)
 	DecryptMessage(ctx context.Context, req *customer.DecryptMessageReq, callOptions ...callopt.Option) (r *customer.DecryptMessageResp, err error)
 	DesensitizeMessage(ctx context.Context, req *customer.DesensitizeMessageReq, callOptions ...callopt.Option) (r *customer.DesensitizeMessageResp, err error)
@@ -182,6 +192,51 @@ func (p *kCustomerServiceClient) GetLeaveTransfer(ctx context.Context, req *cust
 func (p *kCustomerServiceClient) ListLeaveTransfer(ctx context.Context, req *customer.ListLeaveTransferReq, callOptions ...callopt.Option) (r *customer.ListLeaveTransferResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.ListLeaveTransfer(ctx, req)
+}
+
+func (p *kCustomerServiceClient) GetLeaveAuditLog(ctx context.Context, req *customer.GetLeaveAuditLogReq, callOptions ...callopt.Option) (r *customer.GetLeaveAuditLogResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.GetLeaveAuditLog(ctx, req)
+}
+
+func (p *kCustomerServiceClient) ApplyChainSwap(ctx context.Context, req *customer.ApplyChainSwapReq, callOptions ...callopt.Option) (r *customer.ApplyChainSwapResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.ApplyChainSwap(ctx, req)
+}
+
+func (p *kCustomerServiceClient) ApproveChainSwap(ctx context.Context, req *customer.ApproveChainSwapReq, callOptions ...callopt.Option) (r *customer.ApproveChainSwapResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.ApproveChainSwap(ctx, req)
+}
+
+func (p *kCustomerServiceClient) ListChainSwap(ctx context.Context, req *customer.ListChainSwapReq, callOptions ...callopt.Option) (r *customer.ListChainSwapResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.ListChainSwap(ctx, req)
+}
+
+func (p *kCustomerServiceClient) GetChainSwap(ctx context.Context, req *customer.GetChainSwapReq, callOptions ...callopt.Option) (r *customer.GetChainSwapResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.GetChainSwap(ctx, req)
+}
+
+func (p *kCustomerServiceClient) Heartbeat(ctx context.Context, req *customer.HeartbeatReq, callOptions ...callopt.Option) (r *customer.HeartbeatResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.Heartbeat(ctx, req)
+}
+
+func (p *kCustomerServiceClient) ListOnlineCustomers(ctx context.Context, req *customer.ListOnlineCustomersReq, callOptions ...callopt.Option) (r *customer.ListOnlineCustomersResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.ListOnlineCustomers(ctx, req)
+}
+
+func (p *kCustomerServiceClient) GetSwapCandidates(ctx context.Context, req *customer.GetSwapCandidatesReq, callOptions ...callopt.Option) (r *customer.GetSwapCandidatesResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.GetSwapCandidates(ctx, req)
+}
+
+func (p *kCustomerServiceClient) CheckSwapConflict(ctx context.Context, req *customer.CheckSwapConflictReq, callOptions ...callopt.Option) (r *customer.CheckSwapConflictResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.CheckSwapConflict(ctx, req)
 }
 
 func (p *kCustomerServiceClient) ListConversation(ctx context.Context, req *customer.ListConversationReq, callOptions ...callopt.Option) (r *customer.ListConversationResp, err error) {
@@ -322,6 +377,11 @@ func (p *kCustomerServiceClient) GetCurrentUser(ctx context.Context, req *custom
 func (p *kCustomerServiceClient) Register(ctx context.Context, req *customer.RegisterReq, callOptions ...callopt.Option) (r *customer.RegisterResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.Register(ctx, req)
+}
+
+func (p *kCustomerServiceClient) Logout(ctx context.Context, req *customer.LogoutReq, callOptions ...callopt.Option) (r *customer.LogoutResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.Logout(ctx, req)
 }
 
 func (p *kCustomerServiceClient) EncryptMessage(ctx context.Context, req *customer.EncryptMessageReq, callOptions ...callopt.Option) (r *customer.EncryptMessageResp, err error) {

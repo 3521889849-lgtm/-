@@ -139,6 +139,69 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
+	"GetLeaveAuditLog": kitex.NewMethodInfo(
+		getLeaveAuditLogHandler,
+		newCustomerServiceGetLeaveAuditLogArgs,
+		newCustomerServiceGetLeaveAuditLogResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
+	"ApplyChainSwap": kitex.NewMethodInfo(
+		applyChainSwapHandler,
+		newCustomerServiceApplyChainSwapArgs,
+		newCustomerServiceApplyChainSwapResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
+	"ApproveChainSwap": kitex.NewMethodInfo(
+		approveChainSwapHandler,
+		newCustomerServiceApproveChainSwapArgs,
+		newCustomerServiceApproveChainSwapResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
+	"ListChainSwap": kitex.NewMethodInfo(
+		listChainSwapHandler,
+		newCustomerServiceListChainSwapArgs,
+		newCustomerServiceListChainSwapResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
+	"GetChainSwap": kitex.NewMethodInfo(
+		getChainSwapHandler,
+		newCustomerServiceGetChainSwapArgs,
+		newCustomerServiceGetChainSwapResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
+	"Heartbeat": kitex.NewMethodInfo(
+		heartbeatHandler,
+		newCustomerServiceHeartbeatArgs,
+		newCustomerServiceHeartbeatResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
+	"ListOnlineCustomers": kitex.NewMethodInfo(
+		listOnlineCustomersHandler,
+		newCustomerServiceListOnlineCustomersArgs,
+		newCustomerServiceListOnlineCustomersResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
+	"GetSwapCandidates": kitex.NewMethodInfo(
+		getSwapCandidatesHandler,
+		newCustomerServiceGetSwapCandidatesArgs,
+		newCustomerServiceGetSwapCandidatesResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
+	"CheckSwapConflict": kitex.NewMethodInfo(
+		checkSwapConflictHandler,
+		newCustomerServiceCheckSwapConflictArgs,
+		newCustomerServiceCheckSwapConflictResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
 	"ListConversation": kitex.NewMethodInfo(
 		listConversationHandler,
 		newCustomerServiceListConversationArgs,
@@ -332,6 +395,13 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		registerHandler,
 		newCustomerServiceRegisterArgs,
 		newCustomerServiceRegisterResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
+	"Logout": kitex.NewMethodInfo(
+		logoutHandler,
+		newCustomerServiceLogoutArgs,
+		newCustomerServiceLogoutResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
@@ -765,6 +835,168 @@ func newCustomerServiceListLeaveTransferArgs() interface{} {
 
 func newCustomerServiceListLeaveTransferResult() interface{} {
 	return customer.NewCustomerServiceListLeaveTransferResult()
+}
+
+func getLeaveAuditLogHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*customer.CustomerServiceGetLeaveAuditLogArgs)
+	realResult := result.(*customer.CustomerServiceGetLeaveAuditLogResult)
+	success, err := handler.(customer.CustomerService).GetLeaveAuditLog(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newCustomerServiceGetLeaveAuditLogArgs() interface{} {
+	return customer.NewCustomerServiceGetLeaveAuditLogArgs()
+}
+
+func newCustomerServiceGetLeaveAuditLogResult() interface{} {
+	return customer.NewCustomerServiceGetLeaveAuditLogResult()
+}
+
+func applyChainSwapHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*customer.CustomerServiceApplyChainSwapArgs)
+	realResult := result.(*customer.CustomerServiceApplyChainSwapResult)
+	success, err := handler.(customer.CustomerService).ApplyChainSwap(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newCustomerServiceApplyChainSwapArgs() interface{} {
+	return customer.NewCustomerServiceApplyChainSwapArgs()
+}
+
+func newCustomerServiceApplyChainSwapResult() interface{} {
+	return customer.NewCustomerServiceApplyChainSwapResult()
+}
+
+func approveChainSwapHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*customer.CustomerServiceApproveChainSwapArgs)
+	realResult := result.(*customer.CustomerServiceApproveChainSwapResult)
+	success, err := handler.(customer.CustomerService).ApproveChainSwap(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newCustomerServiceApproveChainSwapArgs() interface{} {
+	return customer.NewCustomerServiceApproveChainSwapArgs()
+}
+
+func newCustomerServiceApproveChainSwapResult() interface{} {
+	return customer.NewCustomerServiceApproveChainSwapResult()
+}
+
+func listChainSwapHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*customer.CustomerServiceListChainSwapArgs)
+	realResult := result.(*customer.CustomerServiceListChainSwapResult)
+	success, err := handler.(customer.CustomerService).ListChainSwap(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newCustomerServiceListChainSwapArgs() interface{} {
+	return customer.NewCustomerServiceListChainSwapArgs()
+}
+
+func newCustomerServiceListChainSwapResult() interface{} {
+	return customer.NewCustomerServiceListChainSwapResult()
+}
+
+func getChainSwapHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*customer.CustomerServiceGetChainSwapArgs)
+	realResult := result.(*customer.CustomerServiceGetChainSwapResult)
+	success, err := handler.(customer.CustomerService).GetChainSwap(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newCustomerServiceGetChainSwapArgs() interface{} {
+	return customer.NewCustomerServiceGetChainSwapArgs()
+}
+
+func newCustomerServiceGetChainSwapResult() interface{} {
+	return customer.NewCustomerServiceGetChainSwapResult()
+}
+
+func heartbeatHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*customer.CustomerServiceHeartbeatArgs)
+	realResult := result.(*customer.CustomerServiceHeartbeatResult)
+	success, err := handler.(customer.CustomerService).Heartbeat(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newCustomerServiceHeartbeatArgs() interface{} {
+	return customer.NewCustomerServiceHeartbeatArgs()
+}
+
+func newCustomerServiceHeartbeatResult() interface{} {
+	return customer.NewCustomerServiceHeartbeatResult()
+}
+
+func listOnlineCustomersHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*customer.CustomerServiceListOnlineCustomersArgs)
+	realResult := result.(*customer.CustomerServiceListOnlineCustomersResult)
+	success, err := handler.(customer.CustomerService).ListOnlineCustomers(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newCustomerServiceListOnlineCustomersArgs() interface{} {
+	return customer.NewCustomerServiceListOnlineCustomersArgs()
+}
+
+func newCustomerServiceListOnlineCustomersResult() interface{} {
+	return customer.NewCustomerServiceListOnlineCustomersResult()
+}
+
+func getSwapCandidatesHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*customer.CustomerServiceGetSwapCandidatesArgs)
+	realResult := result.(*customer.CustomerServiceGetSwapCandidatesResult)
+	success, err := handler.(customer.CustomerService).GetSwapCandidates(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newCustomerServiceGetSwapCandidatesArgs() interface{} {
+	return customer.NewCustomerServiceGetSwapCandidatesArgs()
+}
+
+func newCustomerServiceGetSwapCandidatesResult() interface{} {
+	return customer.NewCustomerServiceGetSwapCandidatesResult()
+}
+
+func checkSwapConflictHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*customer.CustomerServiceCheckSwapConflictArgs)
+	realResult := result.(*customer.CustomerServiceCheckSwapConflictResult)
+	success, err := handler.(customer.CustomerService).CheckSwapConflict(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newCustomerServiceCheckSwapConflictArgs() interface{} {
+	return customer.NewCustomerServiceCheckSwapConflictArgs()
+}
+
+func newCustomerServiceCheckSwapConflictResult() interface{} {
+	return customer.NewCustomerServiceCheckSwapConflictResult()
 }
 
 func listConversationHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
@@ -1271,6 +1503,24 @@ func newCustomerServiceRegisterResult() interface{} {
 	return customer.NewCustomerServiceRegisterResult()
 }
 
+func logoutHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*customer.CustomerServiceLogoutArgs)
+	realResult := result.(*customer.CustomerServiceLogoutResult)
+	success, err := handler.(customer.CustomerService).Logout(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newCustomerServiceLogoutArgs() interface{} {
+	return customer.NewCustomerServiceLogoutArgs()
+}
+
+func newCustomerServiceLogoutResult() interface{} {
+	return customer.NewCustomerServiceLogoutResult()
+}
+
 func encryptMessageHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	realArg := arg.(*customer.CustomerServiceEncryptMessageArgs)
 	realResult := result.(*customer.CustomerServiceEncryptMessageResult)
@@ -1569,6 +1819,96 @@ func (p *kClient) ListLeaveTransfer(ctx context.Context, req *customer.ListLeave
 	return _result.GetSuccess(), nil
 }
 
+func (p *kClient) GetLeaveAuditLog(ctx context.Context, req *customer.GetLeaveAuditLogReq) (r *customer.GetLeaveAuditLogResp, err error) {
+	var _args customer.CustomerServiceGetLeaveAuditLogArgs
+	_args.Req = req
+	var _result customer.CustomerServiceGetLeaveAuditLogResult
+	if err = p.c.Call(ctx, "GetLeaveAuditLog", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) ApplyChainSwap(ctx context.Context, req *customer.ApplyChainSwapReq) (r *customer.ApplyChainSwapResp, err error) {
+	var _args customer.CustomerServiceApplyChainSwapArgs
+	_args.Req = req
+	var _result customer.CustomerServiceApplyChainSwapResult
+	if err = p.c.Call(ctx, "ApplyChainSwap", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) ApproveChainSwap(ctx context.Context, req *customer.ApproveChainSwapReq) (r *customer.ApproveChainSwapResp, err error) {
+	var _args customer.CustomerServiceApproveChainSwapArgs
+	_args.Req = req
+	var _result customer.CustomerServiceApproveChainSwapResult
+	if err = p.c.Call(ctx, "ApproveChainSwap", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) ListChainSwap(ctx context.Context, req *customer.ListChainSwapReq) (r *customer.ListChainSwapResp, err error) {
+	var _args customer.CustomerServiceListChainSwapArgs
+	_args.Req = req
+	var _result customer.CustomerServiceListChainSwapResult
+	if err = p.c.Call(ctx, "ListChainSwap", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) GetChainSwap(ctx context.Context, req *customer.GetChainSwapReq) (r *customer.GetChainSwapResp, err error) {
+	var _args customer.CustomerServiceGetChainSwapArgs
+	_args.Req = req
+	var _result customer.CustomerServiceGetChainSwapResult
+	if err = p.c.Call(ctx, "GetChainSwap", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) Heartbeat(ctx context.Context, req *customer.HeartbeatReq) (r *customer.HeartbeatResp, err error) {
+	var _args customer.CustomerServiceHeartbeatArgs
+	_args.Req = req
+	var _result customer.CustomerServiceHeartbeatResult
+	if err = p.c.Call(ctx, "Heartbeat", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) ListOnlineCustomers(ctx context.Context, req *customer.ListOnlineCustomersReq) (r *customer.ListOnlineCustomersResp, err error) {
+	var _args customer.CustomerServiceListOnlineCustomersArgs
+	_args.Req = req
+	var _result customer.CustomerServiceListOnlineCustomersResult
+	if err = p.c.Call(ctx, "ListOnlineCustomers", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) GetSwapCandidates(ctx context.Context, req *customer.GetSwapCandidatesReq) (r *customer.GetSwapCandidatesResp, err error) {
+	var _args customer.CustomerServiceGetSwapCandidatesArgs
+	_args.Req = req
+	var _result customer.CustomerServiceGetSwapCandidatesResult
+	if err = p.c.Call(ctx, "GetSwapCandidates", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) CheckSwapConflict(ctx context.Context, req *customer.CheckSwapConflictReq) (r *customer.CheckSwapConflictResp, err error) {
+	var _args customer.CustomerServiceCheckSwapConflictArgs
+	_args.Req = req
+	var _result customer.CustomerServiceCheckSwapConflictResult
+	if err = p.c.Call(ctx, "CheckSwapConflict", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
 func (p *kClient) ListConversation(ctx context.Context, req *customer.ListConversationReq) (r *customer.ListConversationResp, err error) {
 	var _args customer.CustomerServiceListConversationArgs
 	_args.Req = req
@@ -1844,6 +2184,16 @@ func (p *kClient) Register(ctx context.Context, req *customer.RegisterReq) (r *c
 	_args.Req = req
 	var _result customer.CustomerServiceRegisterResult
 	if err = p.c.Call(ctx, "Register", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) Logout(ctx context.Context, req *customer.LogoutReq) (r *customer.LogoutResp, err error) {
+	var _args customer.CustomerServiceLogoutArgs
+	_args.Req = req
+	var _result customer.CustomerServiceLogoutResult
+	if err = p.c.Call(ctx, "Logout", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

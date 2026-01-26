@@ -121,6 +121,72 @@ export const api = {
 			method: 'GET'
 		})
 	},
+	// 获取请假审计日志
+	getLeaveAuditLog(applyId) {
+		return request({
+			path: '/api/leave/audit-log' + toQuery({ apply_id: applyId }),
+			method: 'GET'
+		})
+	},
+	// 获取调班候选人
+	getSwapCandidates(params) {
+		return request({
+			path: '/api/leave/swap-candidates' + toQuery(params),
+			method: 'GET'
+		})
+	},
+	// 检测调班冲突
+	checkSwapConflict(params) {
+		return request({
+			path: '/api/leave/check-conflict' + toQuery(params),
+			method: 'GET'
+		})
+	},
+	// 提交链式调班申请
+	applyChainSwap(payload) {
+		return request({
+			path: '/api/leave/chain-swap/apply',
+			method: 'POST',
+			data: payload
+		})
+	},
+	// 审批链式调班申请
+	approveChainSwap(payload) {
+		return request({
+			path: '/api/leave/chain-swap/approve',
+			method: 'POST',
+			data: payload
+		})
+	},
+	// 获取链式调班申请列表
+	listChainSwap(params) {
+		return request({
+			path: '/api/leave/chain-swap/list' + toQuery(params),
+			method: 'GET'
+		})
+	},
+	// 获取链式调班申请详情
+	getChainSwap(swapId) {
+		return request({
+			path: '/api/leave/chain-swap/get' + toQuery({ swap_id: swapId }),
+			method: 'GET'
+		})
+	},
+
+	// 心跳与在线状态
+	heartbeat(csId) {
+		return request({
+			path: '/api/customer/heartbeat',
+			method: 'POST',
+			data: { cs_id: csId }
+		})
+	},
+	listOnlineCustomers(params) {
+		return request({
+			path: '/api/customer/online-list' + toQuery(params),
+			method: 'GET'
+		})
+	},
 
 	// 会话转接
 	transferConversation(payload) {
@@ -460,8 +526,17 @@ export const api = {
 			method: 'GET'
 		})
 	},
-	// 退出登录（前端清除本地存储）
-	logout() {
+	// 退出登录（调用后端接口置offline，并清除本地存储）
+	logout(csId) {
+		// 异步调用后端logout接口
+		if (csId) {
+			request({
+				path: '/api/v1/user/logout',
+				method: 'POST',
+				data: { cs_id: csId }
+			}).catch(e => console.error('logout api error:', e))
+		}
+		// 清除本地存储
 		uni.removeStorageSync('token')
 		uni.removeStorageSync('userInfo')
 		uni.removeStorageSync('isLogin')

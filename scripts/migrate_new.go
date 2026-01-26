@@ -7,12 +7,11 @@ import (
 	"path/filepath"
 
 	"example_shop/service/customer/config"
-	"example_shop/service/customer/dal"
+	"example_shop/service/customer/repository"
 )
 
 func main() {
-	// 初始化配置
-	if err := config.InitConfig(mustResolveConfigPath(
+	// 初始化配�?	if err := config.InitConfig(mustResolveConfigPath(
 		"service/customer/config/config.yaml",
 		"config/config.yaml",
 	)); err != nil {
@@ -20,12 +19,11 @@ func main() {
 	}
 
 	// 初始化数据库
-	if err := dal.InitDB(); err != nil {
+	if err := repository.InitDB(); err != nil {
 		log.Fatalf("Failed to init database: %v", err)
 	}
 
-	// 迁移数据表
-	if err := dal.MigrateTables(); err != nil {
+	// 迁移数据�?	if err := repository.MigrateTables(); err != nil {
 		log.Fatalf("Failed to migrate tables: %v", err)
 	}
 
@@ -76,7 +74,7 @@ BEGIN
   SET now_time = NOW();
 
   INSERT INTO t_customer_service (cs_id,cs_name,dept_id,team_id,skill_tags,status,current_status,create_time,update_time)
-  SELECT 'KF001','张三','DEPT001','TEAM001','票务查询,退款处理',1,0,now_time,now_time FROM DUAL
+  SELECT 'KF001','张三','DEPT001','TEAM001','票务查询,退款处�?,1,0,now_time,now_time FROM DUAL
   WHERE NOT EXISTS (SELECT 1 FROM t_customer_service WHERE cs_id='KF001');
 
   INSERT INTO t_customer_service (cs_id,cs_name,dept_id,team_id,skill_tags,status,current_status,create_time,update_time)
@@ -92,11 +90,11 @@ BEGIN
   WHERE NOT EXISTS (SELECT 1 FROM t_customer_service WHERE cs_id='KF004');
 
   INSERT INTO t_customer_service (cs_id,cs_name,dept_id,team_id,skill_tags,status,current_status,create_time,update_time)
-  SELECT 'KF005','钱七','DEPT002','TEAM003','发票开具,支付问题',1,0,now_time,now_time FROM DUAL
+  SELECT 'KF005','钱七','DEPT002','TEAM003','发票开�?支付问题',1,0,now_time,now_time FROM DUAL
   WHERE NOT EXISTS (SELECT 1 FROM t_customer_service WHERE cs_id='KF005');
 
   INSERT INTO t_customer_service (cs_id,cs_name,dept_id,team_id,skill_tags,status,current_status,create_time,update_time)
-  SELECT 'KF006','孙八','DEPT003','TEAM004','技术支持,账号问题',1,2,now_time,now_time FROM DUAL
+  SELECT 'KF006','孙八','DEPT003','TEAM004','技术支�?账号问题',1,2,now_time,now_time FROM DUAL
   WHERE NOT EXISTS (SELECT 1 FROM t_customer_service WHERE cs_id='KF006');
 END`,
 
@@ -106,16 +104,16 @@ BEGIN
   DECLARE now_time DATETIME;
   SET now_time = NOW();
 
-  DELETE FROM t_quick_reply WHERE reply_content LIKE '【种子】%';
+  DELETE FROM t_quick_reply WHERE reply_content LIKE '【种子�?';
 
   INSERT INTO t_quick_reply (reply_type,reply_content,create_by,is_public,create_time,update_time)
   VALUES
-    (3,'【种子】您好，欢迎咨询天极票务，请问需要我帮您查询哪个订单？','KF001',1,now_time,now_time),
-    (0,'【种子】请提供订单号/手机号后四位，我马上为您核实。','KF001',1,now_time,now_time),
-    (0,'【种子】退款一般1-7个工作日原路退回，请您耐心等待。','KF002',1,now_time,now_time),
-    (1,'【种子】非常抱歉给您带来不便，我先为您登记并立即跟进。','KF003',1,now_time,now_time),
-    (2,'【种子】感谢您的建议，我们会记录并持续优化体验。','KF003',1,now_time,now_time),
-    (3,'【种子】已为您处理完成，如还有问题随时联系我。','KF002',1,now_time,now_time);
+    (3,'【种子】您好，欢迎咨询天极票务，请问需要我帮您查询哪个订单�?,'KF001',1,now_time,now_time),
+    (0,'【种子】请提供订单�?手机号后四位，我马上为您核实�?,'KF001',1,now_time,now_time),
+    (0,'【种子】退款一�?-7个工作日原路退回，请您耐心等待�?,'KF002',1,now_time,now_time),
+    (1,'【种子】非常抱歉给您带来不便，我先为您登记并立即跟进�?,'KF003',1,now_time,now_time),
+    (2,'【种子】感谢您的建议，我们会记录并持续优化体验�?,'KF003',1,now_time,now_time),
+    (3,'【种子】已为您处理完成，如还有问题随时联系我�?,'KF002',1,now_time,now_time);
 END`,
 
 		`DROP PROCEDURE IF EXISTS sp_seed_schedule`,
@@ -223,13 +221,13 @@ BEGIN
     SELECT
       conv_id,1,cs_id,qr.reply_content,NULL,NULL,NULL,1,qr.reply_id,DATE_ADD(start_t, INTERVAL 3 MINUTE)
     FROM t_quick_reply qr
-    WHERE qr.reply_content LIKE '【种子】请提供订单号%'
+    WHERE qr.reply_content LIKE '【种子】请提供订单�?'
     ORDER BY qr.reply_id DESC LIMIT 1;
 
     INSERT INTO t_conv_message
       (conv_id,sender_type,sender_id,msg_content,file_url,file_type,voice_url,is_quick_reply,quick_reply_id,send_time)
     VALUES
-      (conv_id,0,CONCAT('U', LPAD(i, 4, '0')),'好的，手机号后四位是8899。',NULL,NULL,NULL,0,NULL,DATE_ADD(start_t, INTERVAL 5 MINUTE));
+      (conv_id,0,CONCAT('U', LPAD(i, 4, '0')),'好的，手机号后四位是8899�?,NULL,NULL,NULL,0,NULL,DATE_ADD(start_t, INTERVAL 5 MINUTE));
 
     SET i = i + 1;
   END WHILE;
@@ -250,12 +248,12 @@ BEGIN
   SELECT shift_id INTO shift_early FROM t_shift_config WHERE shift_name='早班' AND is_holiday=0 ORDER BY shift_id LIMIT 1;
   SELECT shift_id INTO shift_mid FROM t_shift_config WHERE shift_name='中班' AND is_holiday=0 ORDER BY shift_id LIMIT 1;
 
-  DELETE FROM t_leave_transfer WHERE reason LIKE '【种子】%';
+  DELETE FROM t_leave_transfer WHERE reason LIKE '【种子�?';
 
   INSERT INTO t_leave_transfer
     (cs_id,apply_type,target_date,shift_id,target_cs_id,approval_status,approver_id,approval_time,reason,create_time,update_time)
   VALUES
-    ('KF006',0,day2,shift_early,NULL,1,'ADMIN001',now_time,'【种子】身体不适，请假一天',now_time,now_time),
+    ('KF006',0,day2,shift_early,NULL,1,'ADMIN001',now_time,'【种子】身体不适，请假一�?,now_time,now_time),
     ('KF003',0,day4,shift_mid,NULL,0,NULL,NULL,'【种子】家中有事，申请请假',now_time,now_time),
     ('KF004',1,day2,shift_mid,'KF005',1,'ADMIN001',now_time,'【种子】申请调班至KF005',now_time,now_time);
 END`,
@@ -271,8 +269,8 @@ BEGIN
   WHERE NOT EXISTS (SELECT 1 FROM t_conv_tag WHERE tag_name='投诉');
 
   INSERT INTO t_conv_tag (tag_name,tag_color,sort_no,create_by,create_time,update_time)
-  SELECT '退款','#fa8c16',2,'ADMIN_SEED',now_time,now_time FROM DUAL
-  WHERE NOT EXISTS (SELECT 1 FROM t_conv_tag WHERE tag_name='退款');
+  SELECT '退�?,'#fa8c16',2,'ADMIN_SEED',now_time,now_time FROM DUAL
+  WHERE NOT EXISTS (SELECT 1 FROM t_conv_tag WHERE tag_name='退�?);
 
   INSERT INTO t_conv_tag (tag_name,tag_color,sort_no,create_by,create_time,update_time)
   SELECT '改签','#1890ff',3,'ADMIN_SEED',now_time,now_time FROM DUAL
@@ -297,7 +295,7 @@ END`,
 	}
 
 	for _, sql := range statements {
-		if err := dal.DB.Exec(sql).Error; err != nil {
+		if err := repository.DB.Exec(sql).Error; err != nil {
 			return fmt.Errorf("exec failed: %w; sql=%s", err, shortSQL(sql))
 		}
 	}
@@ -305,7 +303,7 @@ END`,
 }
 
 func runSeedProcedures() error {
-	if err := dal.DB.Exec("CALL sp_seed_all(CURDATE(), ?, ?)", 7, 8).Error; err != nil {
+	if err := repository.DB.Exec("CALL sp_seed_all(CURDATE(), ?, ?)", 7, 8).Error; err != nil {
 		return err
 	}
 	return nil

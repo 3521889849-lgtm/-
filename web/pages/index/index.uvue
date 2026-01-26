@@ -8,71 +8,157 @@
 			</view>
 			
 			<scroll-view class="menu-scroll" scroll-y="true">
-				<view class="menu-group">
-					<view 
-						v-if="isAdmin"
-						class="menu-item" 
-						:class="{ active: currentTab === 'dashboard' }"
-						@click="switchTab('dashboard')"
-					>
-						<text class="menu-icon">📊</text>
-						<text class="menu-text">工作台</text>
+				<!-- 管理员菜单 -->
+				<view v-if="isAdmin">
+					<view class="menu-group">
+						<view 
+							class="menu-item" 
+							:class="{ active: currentTab === 'dashboard' }"
+							@click="switchTab('dashboard')"
+						>
+							<text class="menu-icon">📊</text>
+							<text class="menu-text">工作台</text>
+						</view>
+					</view>
+
+					<view class="menu-group-title">排班管理</view>
+					<view class="menu-group">
+						<view 
+							class="menu-item" 
+							:class="{ active: currentTab === 'schedule' }"
+							@click="switchTab('schedule')"
+						>
+							<text class="menu-icon">📅</text>
+							<text class="menu-text">排班管理</text>
+						</view>
+						<view 
+							class="menu-item" 
+							:class="{ active: currentTab === 'shift' }"
+							@click="switchTab('shift')"
+						>
+							<text class="menu-icon">⚙️</text>
+							<text class="menu-text">班次配置</text>
+						</view>
+					</view>
+
+					<view class="menu-group-title">审批中心</view>
+					<view class="menu-group">
+						<view 
+							class="menu-item" 
+							:class="{ active: currentTab === 'leave_approve' }"
+							@click="switchTab('leave_approve')"
+						>
+							<text class="menu-icon">✅</text>
+							<text class="menu-text">请假审批</text>
+						</view>
+						<view 
+							class="menu-item" 
+							:class="{ active: currentTab === 'chain_swap_approve' }"
+							@click="switchTab('chain_swap_approve')"
+						>
+							<text class="menu-icon">🔄</text>
+							<text class="menu-text">调班审批</text>
+						</view>
+					</view>
+
+					<view class="menu-group-title">客户服务</view>
+					<view class="menu-group">
+						<view 
+							class="menu-item" 
+							:class="{ active: currentTab === 'transfer' }"
+							@click="switchTab('transfer')"
+						>
+							<text class="menu-icon">💬</text>
+							<text class="menu-text">会话管理</text>
+						</view>
 					</view>
 				</view>
 
-				<view class="menu-group-title">业务管理</view>
-				<view class="menu-group">
-					<!-- 排班管理：仅管理员可见 -->
-					<view 
-						v-if="isAdmin"
-						class="menu-item" 
-						:class="{ active: currentTab === 'schedule' }"
-						@click="switchTab('schedule')"
-					>
-						<text class="menu-icon">📅</text>
-						<text class="menu-text">排班管理</text>
+				<!-- 经理菜单 -->
+				<view v-if="isManager">
+					<view class="menu-group">
+						<view 
+							class="menu-item" 
+							:class="{ active: currentTab === 'schedule' }"
+							@click="switchTab('schedule')"
+						>
+							<text class="menu-icon">📅</text>
+							<text class="menu-text">排班总览</text>
+						</view>
 					</view>
-					<!-- 班次配置：仅管理员可见 -->
-					<view 
-						v-if="isAdmin"
-						class="menu-item" 
-						:class="{ active: currentTab === 'shift' }"
-						@click="switchTab('shift')"
-					>
-						<text class="menu-icon">⚙️</text>
-						<text class="menu-text">班次配置</text>
-					</view>
-					<!-- 请假申请：所有角色可见 -->
-					<view 
-						class="menu-item" 
-						:class="{ active: currentTab === 'leave_apply' }"
-						@click="switchTab('leave_apply')"
-					>
-						<text class="menu-icon">✈️</text>
-						<text class="menu-text">请假申请</text>
-					</view>
-					<!-- 审批处理：仅管理员可见 -->
-					<view 
-						v-if="isAdmin"
-						class="menu-item" 
-						:class="{ active: currentTab === 'leave_approve' }"
-						@click="switchTab('leave_approve')"
-					>
-						<text class="menu-icon">✅</text>
-						<text class="menu-text">审批处理</text>
+
+					<view class="menu-group-title">审批中心</view>
+					<view class="menu-group">
+						<view 
+							class="menu-item" 
+							:class="{ active: currentTab === 'leave_approve' }"
+							@click="switchTab('leave_approve')"
+						>
+							<text class="menu-icon">✅</text>
+							<text class="menu-text">请假审批</text>
+						</view>
+						<view 
+							class="menu-item" 
+							:class="{ active: currentTab === 'chain_swap_approve' }"
+							@click="switchTab('chain_swap_approve')"
+						>
+							<text class="menu-icon">🔄</text>
+							<text class="menu-text">调班审批</text>
+						</view>
 					</view>
 				</view>
 
-				<view class="menu-group-title">客户服务</view>
-				<view class="menu-group">
-					<!-- 会话管理：所有角色可见 -->
-					<view 
-						class="menu-item" 
-						:class="{ active: currentTab === 'transfer' }"
-						@click="switchTab('transfer')"
-					>
-						<text class="menu-icon">💬</text>
-						<text class="menu-text">会话管理</text>
+				<!-- 客服菜单 -->
+				<view v-if="isCS">
+					<view class="menu-group">
+						<view 
+							class="menu-item" 
+							:class="{ active: currentTab === 'schedule' }"
+							@click="switchTab('schedule')"
+						>
+							<text class="menu-icon">📅</text>
+							<text class="menu-text">我的排班</text>
+						</view>
+					</view>
+
+					<view class="menu-group-title">申请管理</view>
+					<view class="menu-group">
+						<view 
+							class="menu-item" 
+							:class="{ active: currentTab === 'leave_apply' }"
+							@click="switchTab('leave_apply')"
+						>
+							<text class="menu-icon">✈️</text>
+							<text class="menu-text">请假申请</text>
+						</view>
+						<view 
+							class="menu-item" 
+							:class="{ active: currentTab === 'chain_swap_apply' }"
+							@click="switchTab('chain_swap_apply')"
+						>
+							<text class="menu-icon">🔄</text>
+							<text class="menu-text">调班申请</text>
+						</view>
+						<view 
+							class="menu-item" 
+							:class="{ active: currentTab === 'my_applications' }"
+							@click="switchTab('my_applications')"
+						>
+							<text class="menu-icon">📝</text>
+							<text class="menu-text">我的申请</text>
+						</view>
+					</view>
+
+					<view class="menu-group-title">客户服务</view>
+					<view class="menu-group">
+						<view 
+							class="menu-item" 
+							:class="{ active: currentTab === 'transfer' }"
+							@click="switchTab('transfer')"
+						>
+							<text class="menu-icon">💬</text>
+							<text class="menu-text">会话管理</text>
+						</view>
 					</view>
 				</view>
 			</scroll-view>
@@ -110,6 +196,9 @@
 					<ShiftConfigView v-if="currentTab === 'shift'" @request-scroll-top="scrollToTop" />
 					<LeaveApplyView v-if="currentTab === 'leave_apply'" />
 					<LeaveApproveView v-if="currentTab === 'leave_approve'" />
+					<ChainSwapApplyView v-if="currentTab === 'chain_swap_apply'" />
+					<ChainSwapApproveView v-if="currentTab === 'chain_swap_approve'" />
+					<MyApplicationsView v-if="currentTab === 'my_applications'" />
 					<TransferView v-if="currentTab === 'transfer'" />
 				</view>
 			</scroll-view>
@@ -123,7 +212,11 @@
 	import ShiftConfigView from '../../components/views/ShiftConfigView.uvue'
 	import LeaveApplyView from '../../components/views/LeaveApplyView.uvue'
 	import LeaveApproveView from '../../components/views/LeaveApproveView.uvue'
+	import ChainSwapApplyView from '../../components/views/ChainSwapApplyView.uvue'
+	import ChainSwapApproveView from '../../components/views/ChainSwapApproveView.uvue'
+	import MyApplicationsView from '../../components/views/MyApplicationsView.uvue'
 	import TransferView from '../../components/views/TransferView.uvue'
+	import { api } from '../../common/api.js'
 
 	export default {
 		components: {
@@ -132,6 +225,9 @@
 			ShiftConfigView,
 			LeaveApplyView,
 			LeaveApproveView,
+			ChainSwapApplyView,
+			ChainSwapApproveView,
+			MyApplicationsView,
 			TransferView
 		},
 		data() {
@@ -154,7 +250,10 @@
 					'schedule': '排班管理',
 					'shift': '班次配置',
 					'leave_apply': '请假申请',
-					'leave_approve': '审批处理',
+					'leave_approve': '请假审批',
+					'chain_swap_apply': '调班申请',
+					'chain_swap_approve': '调班审批',
+					'my_applications': '我的申请',
 					'transfer': '会话管理'
 				}
 				return map[this.currentTab] || '未知页面'
@@ -166,6 +265,14 @@
 			// 是否为管理员
 			isAdmin() {
 				return this.roleCode === 'admin'
+			},
+			// 是否为经理
+			isManager() {
+				return this.roleCode === 'manager'
+			},
+			// 是否为客服
+			isCS() {
+				return this.roleCode === 'cs' || (!this.isAdmin && !this.isManager)
 			}
 		},
 		onLoad() {
@@ -207,25 +314,43 @@
 			const d = new Date()
 			this.currentDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 			
-			// 客服默认进入请假申请页面
-			if (!this.isAdmin) {
+			// 根据角色设置默认首页
+			if (this.isAdmin) {
+				this.currentTab = 'dashboard'
+			} else if (this.isManager) {
+				this.currentTab = 'schedule'
+			} else {
+				// 客服默认进入请假申请页面
 				this.currentTab = 'leave_apply'
 			}
 		},
 		methods: {
 			// 切换标签页（带权限检查）
 			switchTab(tab) {
-				// 客服权限检查：只允许访问请假申请和会话管理
-				if (!this.isAdmin) {
-					const allowedTabs = ['leave_apply', 'transfer']
-					if (!allowedTabs.includes(tab)) {
-						uni.showToast({
-							title: '无权限访问',
-							icon: 'none'
-						})
-						return
-					}
+				// 定义每个角色允许访问的页面
+				const rolePermissions = {
+					'admin': ['dashboard', 'schedule', 'shift', 'leave_approve', 'chain_swap_approve', 'transfer'],
+					'manager': ['schedule', 'leave_approve', 'chain_swap_approve'],
+					'cs': ['schedule', 'leave_apply', 'chain_swap_apply', 'my_applications', 'transfer']
 				}
+
+				let allowedTabs = []
+				if (this.isAdmin) {
+					allowedTabs = rolePermissions.admin
+				} else if (this.isManager) {
+					allowedTabs = rolePermissions.manager
+				} else {
+					allowedTabs = rolePermissions.cs
+				}
+
+				if (!allowedTabs.includes(tab)) {
+					uni.showToast({
+						title: '无权限访问该页面',
+						icon: 'none'
+					})
+					return
+				}
+
 				this.currentTab = tab
 				this.scrollToTop()
 			},
@@ -246,11 +371,19 @@
 					content: '确定要退出登录吗？',
 					success: (res) => {
 						if (res.confirm) {
-							// 清除本地存储
-							uni.removeStorageSync('token')
-							uni.removeStorageSync('userInfo')
-							uni.removeStorageSync('isLogin')
-							uni.removeStorageSync('roleCode')
+							// 获取当前用户ID并调用logout接口
+							let csId = ''
+							try {
+								const userInfo = uni.getStorageSync('userInfo')
+								if (userInfo) {
+									const info = typeof userInfo === 'string' ? JSON.parse(userInfo) : userInfo
+									csId = info.user_name || ''
+								}
+							} catch (e) {
+								console.error('parse userInfo error:', e)
+							}
+							// 调用api.logout（会调用后端接口并清除本地存储）
+							api.logout(csId)
 							// 使用 reLaunch 跳转到登录页，避免页面栈问题
 							uni.reLaunch({ url: '/pages/login/login' })
 						}
